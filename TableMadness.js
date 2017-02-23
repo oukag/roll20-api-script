@@ -1,7 +1,7 @@
 var MadnessTable = MadnessTable || (function() {
 	'use strict';
 	
-	var version = 1.0,
+	var version = 1.1,
 		rangeMax = 100,
 		scriptName = "Madness Tables",
 		apiCommand = "!madness",
@@ -182,13 +182,18 @@ var MadnessTable = MadnessTable || (function() {
 			var privateQuery = "?{Output|Public,|Private,--private}";
 			var newAction = apiCommand + " " + tableQuery + privateQuery;
 		
-			macro.set("action", newAction);
+			if(macro.get("action") != newAction) {
+				macro.set("action", newAction);
+				log("Updating macro " +  gmMacroName);
+			}
+		} else {
+			log("No macro with name " + gmMacroName + " found");
 		}
 	},
 	
 	checkInstall = function() {
-		updateMacro();
 		log(scriptName + ' v' + version + ' Ready');
+		updateMacro();
 	},
 		registerEventHandlers = function() {
 		on("chat:message", handleInput);
