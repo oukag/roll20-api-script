@@ -1,19 +1,11 @@
-/**
- *	Version 1.0	-	Did a manjor refactor from individual functions to a grouped function approach.
- *	Version 1.1 -	Added a toggleRageCommand to account for resistances granted by a character raging.
- *					Functionality for the 5e Bear Totem rage is also accounted for if the character has
- *					an attribute with the named stored in totemBearAttrName and the value of the
- *					attribute is one of the values listed in totembearattrvalues.
- */
-
 var HitpointTracker = HitpointTracker || (function(){
 	'use strict';
 
-	var version = 1.1,
+	var version = 1.2,
 		scriptName = "Hitpoint Tracker",
 		modHealthCommand = "!modHealth",
 		toggleConcentrationCommand = "!toggleConcentration",
-		toggleRageCommand = "!toggleRageCommand",
+		toggleRageCommand = "!toggleRage",
 		helpCommand = "--help",
 
 		//================================================================================
@@ -35,6 +27,10 @@ var HitpointTracker = HitpointTracker || (function(){
 		hpAttrName = "hp",	// This is also used in clearDeathSavingThrows() event handler
 		npcAttrName = "npc",
 		npcAttrValue = 1,
+		
+		npcResistanceAttrName = "npc_resistance",
+		npcImmunityAttrName = "npc_immunities",
+		npcVulnerabilityAttrName = "npc_vulnerabilities",
 		//================================================================================
 
 		//================================================================================
@@ -73,7 +69,7 @@ var HitpointTracker = HitpointTracker || (function(){
 		//================================================================================
 		// Used in toggleRageCommand
 		//================================================================================
-		// Concentration Information
+		// Rage Information
 		rage_status = "strong",
 		rage_marker = "status_" + rage_status,
 		// Used in damageToken
@@ -115,6 +111,79 @@ var HitpointTracker = HitpointTracker || (function(){
 				14:	{name: "Bludgeoning Magical",	rage: true,		bear:  true,	keywords: ["bludgeoning(magic)"]},
 				15:	{name: "Piercing Magical",		rage: true,		bear:  true,	keywords: ["piercing(magic)"]},
 				16:	{name: "Slashing Magical",		rage: true, 	bear:  true,	keywords: ["slashing(magic)"]},
+			},
+			
+			isRageResistantToType:	function(character,keyword) {
+				var typeIndex = this.getIndexForKeyword(keyword);
+				if(typeIndex == 0) {
+					log("Damage Type '" + keyword + "' not found");
+					return false;
+				}
+				
+				var bearResist = false;
+				var bearTotemAttr = findAttrForCharacter(character, totemBearAttrName);
+				if(bearTotemAttr) {
+					var value = bearTotemAttr.get("current");
+					_.each(totemBearAttrValues, function(obj){
+						if(obj == value) {
+							bearResist = true;
+						}
+					});
+				}
+				
+				if(bearResist) {
+					log("Resist:" + this.props[typeIndex].bear);
+					return this.props[typeIndex].bear;
+				} else {
+					log("Resist:" + this.props[typeIndex].rage);
+					return this.props[typeIndex].rage;
+				}
+			},
+			
+			getIndexForKeyword: function(keyword) {
+				var index = 0;
+				for(var i = 1; i <= this.size; i++) {
+					_.each(this.props[i].keywords, function(obj){
+						if(keyword == obj) {
+							index = i;
+						}
+					});
+				}
+				return index;
+			},
+			
+			getNpcDamageMod(npc, keyword) {
+				var mod = 1;	// Default to normal damage =	  1;
+								// Resistant				=	0.5;
+								// Immune 					=	  0;
+								// Vulnerable 				=	  2;
+				
+				if(!isNPC(npc.id)) { return mod; }
+				log("Damage Type:" + keyword);
+				
+				var attr;
+				// Check Vulnerabilities
+				attr = findAttrForCharacter(npc, npcVulnerabilityAttrName);
+				if(attr && attr.get("current").indexOf(keyword) !== -1){
+					mod = 2;
+				}
+				
+				// Check Resistances
+				attr = findAttrForCharacter(npc, npcResistanceAttrName);
+				if(attr && attr.get("current").indexOf(keyword) !== -1){
+					mod = 0.5;
+				}
+				
+				// Check Immunities
+				log("Immunities");
+				attr = findAttrForCharacter(npc, npcImmunityAttrName);
+				log(attr);
+				if(attr && attr.get("current").indexOf(keyword) !== -1){
+					mod = 0;
+				}
+				
+				return mod;
+				
 			}
 		},
 		//================================================================================
@@ -379,14 +448,22 @@ var HitpointTracker = HitpointTracker || (function(){
 			concentrationCheck(character,value);
 		}
 		if(!isNPC(character.id)) {
-			if(isTokenRaging(token) && isResistantToType(character, type)) {
+			if(isTokenRaging(token) && DAMAGE_TYPES.isRageResistantToType(character, type)) {
 				var resistedDamage = Math.ceil(value/2);
 				value = value - resistedDamage;
 				output = "Damaging " + character.get("name") + " for " + value + " hit points, resisted " + resistedDamage + " " + type + " damage";
 			}
 			mySendChat("GM", "/w " + character.get("name").split(" ")[0] + " " + output);
 		} else {
-		    // This is where resistances and immunities would be checked
+		    var mod = DAMAGE_TYPES.getNpcDamageMod(character, type);
+			if(mod == 2) {
+				output = "Damaging " + character.get("name") + " for " + value + " hit points, vulnerable  to " + type + " damage";
+			} else if(mod == 0.5) {
+				output = "Damaging " + character.get("name") + " for " + value + " hit points, resisted " + Math.ceil(value * mod) + " " + type + " damage";
+			} else if(mod == 0) {
+				output = character.get("name") + " is immune to " + type + " damage.";
+			}
+			value = value * mod;
 		}
 		sendChat(scriptName, "/w gm " + output);
 		log(output);
@@ -738,6 +815,9 @@ var HitpointTracker = HitpointTracker || (function(){
 		}
 	},
 	
+	/**
+	 * This method handles the toggleRageCommand defined above and toggles the rage status on each of the selected tokens
+	 */
 	handleToggleRage = function(msg) {
 		if(msg.type == "api" && msg.content.indexOf(toggleRageCommand) !== -1) {
 			if(!msg.selected) {
@@ -750,43 +830,22 @@ var HitpointTracker = HitpointTracker || (function(){
 		}
 	},
 	
+	/**
+	 * Toggles the rage status on the given token
+	 */
 	toggleTokenRage = function(token) {
-		token.set(concentration_marker, !isTokenRaging(token));
+		token.set(rage_marker, !isTokenRaging(token));
 	},
 	
+	/**
+	 * Determines if the given token has the rage status 
+	 */
 	isTokenRaging = function(token) {
 		return token.get(rage_marker);
 	},
 	
 	isResistantToType = function(character, type) {
-		var typeIndex = 0;
-		for(var i = 1; i <= DAMAGE_TYPES.size; i++) {
-			_.each(DAMAGE_TYPES.props[i].keywords, function(obj){
-				if(type == obj) {
-					typeIndex = i;
-				}
-			});
-		}
 		
-		var bearResist = false;
-		var bearTotemAttr = findAttrForCharacter(character, totemBearAttrName);
-		if(bearTotemAttr) {
-			var value = bearTotemAttr.get("current");
-			_.each(totemBearAttrValues, function(obj){
-				if(obj == value) {
-					bearResist = true;
-				}
-			});
-		}
-		log(type + " index at " + "typeIndex");
-		
-		if(bearResist) {
-			log("Resist:" + DAMAGE_TYPES.props[typeIndex].bear);
-			return DAMAGE_TYPES.props[typeIndex].bear;
-		} else {
-			log("Resist:" + DAMAGE_TYPES.props[typeIndex].rage);
-			return DAMAGE_TYPES.props[typeIndex].rage;
-		}
 		
 	},
 
