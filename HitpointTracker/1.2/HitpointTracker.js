@@ -180,13 +180,13 @@ var HitpointTracker = HitpointTracker || (function(){
 				var attr;
 				// Check Vulnerabilities
 				attr = findAttrForCharacter(npc, npcVulnerabilityAttrName);
-				if(attr && attr.get("current").indexOf(keyword) !== -1){
+				if(attr && attr.get("current").toLowerCase().indexOf(keyword) !== -1){
 					mod = 2;
 				}
 				
 				// Check Resistances
 				attr = findAttrForCharacter(npc, npcResistanceAttrName);
-				if(attr && attr.get("current").indexOf(keyword) !== -1){
+				if(attr && attr.get("current").toLowerCase().indexOf(keyword) !== -1){
 					mod = 0.5;
 				}
 				
@@ -194,7 +194,7 @@ var HitpointTracker = HitpointTracker || (function(){
 				log("Immunities");
 				attr = findAttrForCharacter(npc, npcImmunityAttrName);
 				log(attr);
-				if(attr && attr.get("current").indexOf(keyword) !== -1){
+				if(attr && attr.get("current").toLowerCase().indexOf(keyword) !== -1){
 					mod = 0;
 				}
 				
