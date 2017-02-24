@@ -1,3 +1,19 @@
+/**
+ *	Useful Macros
+ *
+ *	Damage
+ *		!modHealth --sel --damage ?{Damage|0} ?{Type|Acid,acid|Bludgeoning,bludgeoning|Cold,cold|Fire,fire|Force,force|Lightning,lightning|Necrotic,necrotic|Piercing,piercing|Poison,poison|Psychic,psychic|Radiant,radiant|Slashing,slashing|Thunder,thunder|Bludgeoning Magical,bludgeoning(magic)|Piercing Magical,piercing(magic)|Slashing Magical,slashing(magic)}
+ *
+ *	Heal
+ *		!modHealth --sel --heal ?{Healing|0}
+ *
+ *	ToggleConcentration
+ *		!toggleConcentration
+ *
+ *	ToggleRage
+ *		!toggleRage
+ */
+
 var HitpointTracker = HitpointTracker || (function(){
 	'use strict';
 
