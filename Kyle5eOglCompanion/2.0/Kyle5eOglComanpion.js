@@ -361,6 +361,15 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 		
 		return obj;
 	}()),
+			
+	getRollForIndex = function(msg,index) {
+		var iRolls = msg.inlinerolls[index];
+		return {
+			inlineIndex: index,
+			inlinerolls: (iRolls != null) ? iRolls : null,
+			total: (iRolls.results.rolls[0].dice != 0) ? parseInt(iRolls.results.total) : 0
+		};
+	},
 	
 	RollTemplate_Simple = RollTemplate_Simple || (function(){
 		var obj = {};
@@ -394,20 +403,78 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 				}
 			});
 			
-			var getRollForIndex = function(index) {
-				var iRolls = msg.inlinerolls[index];
-				return {
-					inlineIndex: index,
-					inlinerolls: (iRolls != null) ? iRolls : null,
-					total: (iRolls.results.rolls[0].dice != 0) ? parseInt(iRolls.results.total) : 0
-				};
-			};
+			_.each(GeneralScripts.ParseTemplate(content), function(field){
+				var v = (field[1] != null) ? parseInt(field[1].replace("$[[","").replace("]]","")) : null;
+				switch (field[0]) {
+					case "r1": obj.r1 = getRollForIndex(msg,v); break;
+					case "r1": obj.r2 = getRollForIndex(msg,v); break;
+				}
+			});
+			
+			return obj;
+		};
+		
+		return obj;
+	}()),
+	
+	RollTemplate_Description = RollTemplate_Description || (function(){
+		var obj = {};
+			obj.desc = null;
+		
+		obj.parse = function(msg) {
+			if(msg.rolltemplate !== "desc") { return null; }
+			var processedContent = GeneralScripts.ProcessInlineRolls(msg);
+			_.each(GeneralScripts.ParseTemplate(processedContent), function(field){
+				var v = (field[1] != null) ? field[1] : "";
+				switch (field[0]) {
+					case "desc": obj.desc = v; break;
+				}
+			});
+			
+			return obj;
+		};
+		
+		return obj;
+	}()),
+	
+	RollTemplate_Atk = RollTemplate_Atk || (function(){
+		var obj = {};
+			obj.rname = null;
+			obj.mod = null;
+			obj.normal = 0;
+			obj.advantage = 0;
+			obj.disadvantage = 0;
+			obj.always = 0;
+			obj.r1 = null;
+			obj.r2 = null;
+			obj.range = null;
+			obj.desc = null;
+			obj.charname = null;
+		
+		obj.parse = function(msg){
+			if(msg.rolltemplate !== "atk") { return null; }
+			var processedContent = GeneralScripts.ProcessInlineRolls(msg);
+			var content = msg.content;
+			_.each(GeneralScripts.ParseTemplate(processedContent), function(field){
+				var v = (field[1] != null) ? field[1] : "";
+				switch (field[0]) {
+					case "rname":        obj.rname = v;                  break;
+					case "mod":          obj.mod = v;                    break;
+					case "normal":       obj.normal = parseInt(v);       break;
+					case "advantage":    obj.advantage = parseInt(v);    break;
+					case "disadvantage": obj.disadvantage = parseInt(v); break;
+					case "always":       obj.always = parseInt(v);       break;
+					case "range":        obj.range = parseInt(v);        break;
+					case "desc":         obj.desc = parseInt(v);         break;
+					case "charname":     obj.charname = v;               break;
+				}
+			});
 			
 			_.each(GeneralScripts.ParseTemplate(content), function(field){
 				var v = (field[1] != null) ? parseInt(field[1].replace("$[[","").replace("]]","")) : null;
 				switch (field[0]) {
-					case "r1": obj.r1 = getRollForIndex(v); break;
-					case "r1": obj.r2 = getRollForIndex(v); break;
+					case "r1": obj.r1 = getRollForIndex(msg,v); break;
+					case "r1": obj.r2 = getRollForIndex(msgv); break;
 				}
 			});
 			
