@@ -229,6 +229,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 			level_suffix = "_spelllevel",
 			name_base_suffix = "_spellname_base",
 			name_suffix = "_spellname",
+			options_flag_suffix = "_options-flag",
 			output_suffix = "_spelloutput",
 			prep_suffix = "_prep",
 			range_suffix = "_spellrange",
@@ -319,6 +320,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 					attr = createObj ("attribute", {
 						name: repeating_spell_prefix + obj.spelllevel + suffix,
 						characterid: obj.characterid,
+						current: ""
 					});
 				}
 				attr.set("current", v);
