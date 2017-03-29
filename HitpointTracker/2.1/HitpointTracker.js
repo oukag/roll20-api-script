@@ -856,10 +856,11 @@ var HitpointTracker = HitpointTracker || (function(){
 	},
 	
 	hitDiceEventHandler = function(msg) {
-		if(msg.rolltemplate && msg.rolltemplate === "simple" && msg.content.indexOf("^{hit-dice-u") !== -1) {
+		if(msg.rolltemplate && msg.rolltemplate === "simple" && msg.content.indexOf("^{hit-dice-u}") !== -1) {
+			msg.content = msg.content.replace("^{hit-dice-u}", "HIT DICE");
 			var simple = Kyle5eOglCompanion.Parse5eOglRollTemplateSimple(msg);
 			log(simple);
-			if(simple && simple.rname === "^{hit-dice-u" && simple.charname !== "") {
+			if(simple && simple.rname === "HIT DICE" && simple.charname !== "") {
 				// Now we need to get the character for the charname output
 				var character = GeneralScripts.GetCharacterForName(simple.charname);
 				//How many hit dice was the 
@@ -893,6 +894,7 @@ var HitpointTracker = HitpointTracker || (function(){
 						log(ops);
 						var csplit = ops[0].content.split(" ");
 						var characterid = csplit[0];
+						var charname = GeneralScripts.GetCharacterForId(characterid).get("name");
 						var constitution_mod = ops[0].inlinerolls[0].results.total;
 						var rolls = csplit.slice(2);
 						log(rolls);
@@ -913,8 +915,8 @@ var HitpointTracker = HitpointTracker || (function(){
 								newRolls = newRolls + "[[" + roll + "+" + constitution_mod + "]]+";
 							});
 							newRolls = newRolls.substr(0,newRolls.length - 1);
-							var output = "@{" + characterid + "|wtype} &{template:simple} {{rname=DURABLE HIT DICE}} {{normal=1}} {{r1=[[" + newRolls + "]]}} @{" + characterid + "|charname_output} --silent";
-							sendChat(scriptName, output);
+							var output = "@{" + charname + "|wtype} &{template:simple} {{rname=DURABLE HIT DICE}} {{normal=1}} {{r1=[[" + newRolls + "]]}} @{" + charname + "|charname_output} --silent";
+							sendChat("character|"+characterid, output);
 						}
 						healCharacter(characterid, hitDieTotal);
 					});
