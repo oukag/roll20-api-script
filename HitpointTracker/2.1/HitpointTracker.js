@@ -17,7 +17,7 @@
 var HitpointTracker = HitpointTracker || (function(){
 	'use strict';
 
-	var version = 2.0,
+	var version = 2.1,
 		scriptName = "Hitpoint Tracker",
 		modHealthCommand = "!modHealth",
 		toggleConcentrationCommand = "!toggleConcentration",
@@ -238,7 +238,7 @@ var HitpointTracker = HitpointTracker || (function(){
 				}
 				
 				// Check Raging
-				if(isCharacterRaging(character) && isRageResistantToType(character, keyword)) {
+				if(isCharacterRaging(character) && this.isRageResistantToType(character, keyword)) {
 					mod = 0.5;
 				}
 				
@@ -838,7 +838,7 @@ var HitpointTracker = HitpointTracker || (function(){
 		var result = token.get(rage_marker);
 		var character = GeneralScripts.GetCharacterForTokenId(token.id);
 		if(!isNPC(character.id)){
-			_.each(getTokensForCharacter(character), function(obj){
+			_.each(GeneralScripts.GetTokensForCharacter(character), function(obj){
 				obj.set(rage_marker, result);
 			});
 		}
@@ -852,7 +852,7 @@ var HitpointTracker = HitpointTracker || (function(){
 	},
 	
 	isCharacterRaging = function(character) {
-		return isTokenRaging(getTokensForCharacter(character)[0]);
+		return isTokenRaging(GeneralScripts.GetTokensForCharacter(character)[0]);
 	},
 	
 	hitDiceEventHandler = function(msg) {

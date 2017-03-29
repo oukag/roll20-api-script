@@ -2,7 +2,7 @@
 var GeneralScripts = GeneralScripts || (function(){
 	'use strict';
 
-	var version =0.1,
+	var version =1.0,
 		scriptName = "General Scripts",
 	
 	formatTemplateSimple = function(rname, mod, r1, r2, charname){
@@ -161,6 +161,7 @@ var GeneralScripts = GeneralScripts || (function(){
 		GetCharacterForId: getCharacterForId,
 		GetCharacterForName: getCharacterForName,
 		GetCharacterForTokenId: getCharacterForTokenId,
+		GetTokensForCharacter: getTokensForCharacter,
 		FindAttrForCharacter: findAttrForCharacter,
 		FindAttrForCharacterId: findAttrForCharacterId,
 		ParseTemplate: parseTemplate,
