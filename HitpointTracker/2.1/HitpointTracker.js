@@ -938,6 +938,7 @@ var HitpointTracker = HitpointTracker || (function(){
 				//Check to see if the Character has their second wind still available
 				var error = null;
 				var secondWind = Kyle5eOglCompanion.GetResourceWithName("Second Wind", character.id);
+				log("SecondWindEventHandler");
 				log(secondWind);
 				if(!secondWind) {
 					return;
@@ -951,7 +952,7 @@ var HitpointTracker = HitpointTracker || (function(){
 				}
 				
 				// Remove the second wind use from the character sheet.
-				secondWind.set("current",0);
+				secondWind.set("current", parseInt(secondWind.current) - 1);
 				
 				// Heal the character for the amount rolled
 				healCharacter(character.id, simple.r1.total);
