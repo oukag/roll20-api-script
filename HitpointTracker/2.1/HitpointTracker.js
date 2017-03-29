@@ -857,6 +857,8 @@ var HitpointTracker = HitpointTracker || (function(){
 	
 	hitDiceEventHandler = function(msg) {
 		if(msg.rolltemplate && msg.rolltemplate === "simple" && msg.content.indexOf("^{hit-dice-u}") !== -1) {
+			// Because of the way GeneralScripts.ParseTemplate splits based on '}}' the template for Hit Dice interfere with the parsing.
+			// To resolve this issue, we replace the rname with different name and assert that our change is there after parsing.
 			msg.content = msg.content.replace("^{hit-dice-u}", "HIT DICE");
 			var simple = Kyle5eOglCompanion.Parse5eOglRollTemplateSimple(msg);
 			log(simple);
