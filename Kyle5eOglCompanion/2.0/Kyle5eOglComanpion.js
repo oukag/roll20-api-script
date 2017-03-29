@@ -379,41 +379,37 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 			var processedContent = GeneralScripts.ProcessInlineRolls(msg);
 			var content = msg.content;
 			log(msg);
+			log(GeneralScripts.ParseTemplate(content));
 			
-			obj.rname = (content.match(/({{rname=(.*?)}} )/g) != null) ? content.match(/({{rname=(.*?)}} )/g)[0].replace("{{rname=", "").replace("}} ","") : "";
-			
-			var modIndex = (content.match(/({{mod=\$\[\[\d+\]\]}})/g) !== null) ? parseInt(content.match(/({{mod=\$\[\[\d+\]\]}})/g)[0].split("[[")[1].split("]]")[0]) : "";
-			if(modIndex === "") {
-				obj.mod = (processedContent.match(/({{mod=(.*?)}} )/g) != null) ? processedContent.match(/({{mod=(.*?)}} )/g)[0].replace("{{mod=", "").replace("}} ","") : "";
-			} else {
-				// Mod was an inline roll
-				obj.mod = (msg.inlinerolls[modIndex].results.rolls[0].dice != 0) ? parseInt(msg.inlinerolls[modIndex].results.total) : "";
-			}
-			
-			obj.normal =       (content.match(/({{normal=)\d/g) != null) ? 1 : 0;
-			obj.advantage =    (content.match(/({{advantage=)\d/g) != null) ? 1 : 0;
-			obj.disadvantage = (content.match(/({{disadvantage=)\d/g) != null) ? 1 : 0;
-			obj.always =       (content.match(/({{always=)\d/g) != null) ? 1 : 0;
-			
-			var parseRoll = function(roll) {
-				var regex;
-				if(roll == 1) { regex = /({{r1=\$\[\[\d+\]\]}})/g; }
-				else { regex = /({{r2=\$\[\[\d+\]\]}})/g; }
-				
-				var r = null;
-				if(msg.content.match(regex) != null) {
-					r = {};
-					r.inlineIndex = parseInt(msg.content.match(regex)[0].split("[[")[1].split("]]")[0]);
-					r.total = (msg.inlinerolls[r.inlineIndex].results.rolls[0].dice != 0) ? parseInt(msg.inlinerolls[r.inlineIndex].results.total) : 0;
+			_.each(GeneralScripts.ParseTemplate(processedContent), function(field){
+				var v = (field[1] != null) ? field[1] : "";
+				switch (field[0]) {
+					case "rname":        obj.rname = v;                  break;
+					case "mod":          obj.mod = v;                    break;
+					case "normal":       obj.normal = parseInt(v);       break;
+					case "advantage":    obj.advantage = parseInt(v);    break;
+					case "disadvantage": obj.disadvantage = parseInt(v); break;
+					case "always":       obj.always = parseInt(v);       break;
+					case "charname":     obj.charname = v;               break;
 				}
-				return r;
-				
+			});
+			
+			var getRollForIndex = function(index) {
+				var iRolls = msg.inlinerolls[index];
+				return {
+					inlineIndex: index,
+					inlinerolls: (iRolls != null) ? iRolls : null,
+					total: (iRolls.results.rolls[0].dice != 0) ? parseInt(iRolls.results.total) : 0
+				};
 			};
 			
-			obj.r1 = parseRoll(1);
-			obj.r2 = parseRoll(2);
-			
-			obj.charname = (content.match(/({{charname=(.*?)}})/g) != null) ? content.match(/({{charname=(.*?)}})/g)[0].replace("{{charname=", "").replace("}}","") : "";
+			_.each(GeneralScripts.ParseTemplate(content), function(field){
+				var v = (field[1] != null) ? parseInt(field[1].replace("$[[","").replace("]]","")) : null;
+				switch (field[0]) {
+					case "r1": obj.r1 = getRollForIndex(v); break;
+					case "r1": obj.r2 = getRollForIndex(v); break;
+				}
+			});
 			
 			return obj;
 		};

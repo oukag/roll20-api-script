@@ -856,10 +856,10 @@ var HitpointTracker = HitpointTracker || (function(){
 	},
 	
 	hitDiceEventHandler = function(msg) {
-		if(msg.rolltemplate && msg.rolltemplate === "simple" && msg.content.indexOf("^{hit-dice-u}") !== -1) {
+		if(msg.rolltemplate && msg.rolltemplate === "simple" && msg.content.indexOf("^{hit-dice-u") !== -1) {
 			var simple = Kyle5eOglCompanion.Parse5eOglRollTemplateSimple(msg);
 			log(simple);
-			if(simple && simple.rname === "^{hit-dice-u}" && simple.charname !== "") {
+			if(simple && simple.rname === "^{hit-dice-u" && simple.charname !== "") {
 				// Now we need to get the character for the charname output
 				var character = GeneralScripts.GetCharacterForName(simple.charname);
 				//How many hit dice was the 

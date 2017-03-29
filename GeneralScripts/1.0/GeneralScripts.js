@@ -137,6 +137,16 @@ var GeneralScripts = GeneralScripts || (function(){
 		});
 	},
 	
+	parseTemplate = function(content) {
+		var matches = content.match(/({{(.*?)=(.*?)}})/g);
+		var result = [];
+		_.each(matches, function(match){
+			var matchStr = match.replace("{{", "").replace("}}","");
+			result.push(matchStr.split("="));
+		});
+		return result;
+	},
+	
 	checkInstall = function() {
 		log(scriptName + " v" + version + " Ready");
 	};
@@ -153,6 +163,7 @@ var GeneralScripts = GeneralScripts || (function(){
 		GetCharacterForTokenId: getCharacterForTokenId,
 		FindAttrForCharacter: findAttrForCharacter,
 		FindAttrForCharacterId: findAttrForCharacterId,
+		ParseTemplate: parseTemplate,
 	};
 })();
 
