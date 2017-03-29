@@ -12,7 +12,28 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 			obj.max = "";
 			obj.characterid = "";
 			
-			var name_suffix = "_name";
+			var name_suffix = "_name",
+		
+		/*
+		 * Should only be called after the characterid is set for the object.
+		 */
+		getAttrNotNull = function(n, v) {
+			var attr = GeneralScripts.FindAttrForCharacterId(obj.characterid, n);
+			if(v == null) { v = "current"; }
+			return (attr != null) ? attr.get(v) : "";
+		},
+		
+		update = function(res,charId) {
+			log("update Resource");
+			obj.resource = res;
+			obj.characterid = charId;
+			
+			obj.name = getAttrNotNull(res + name_suffix);
+			obj.current = getAttrNotNull(res);
+			obj.max = getAttrNotNull(res, "max");
+			log(obj);
+			return obj;
+		};
 		
 		obj.set = function(n,v) {
 			var attr;
@@ -37,30 +58,24 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 		
 		obj.getForName = function(resourceName, charId) {
 			log("getForName");
-			var error = null;
+			var res = null, error = null;
 			// See if the resource with the name exists
 			var resourceNameAttr = findObjs({_type:"attribute",characterid:charId,current:resourceName})[0];
 			if(!resourceNameAttr) {
 				error = "Could not find resource with name '" + resourceName + "' for character with id '" + charId + "'";
 			} else {
-				log(resourceNameAttr);
 				var resourceAttr = GeneralScripts.FindAttrForCharacterId(charId, resourceNameAttr.get("name").replace(name_suffix,""));
-				log(resourceAttr);
 				if(!resourceAttr) {
 					error = "Could not find resource values for resource with name '" + resourceNameAttr.get("name").replace(name_suffix,"") + "' for the character with id '" + charId + "'";
 				} else {
-					obj.resource = resourceAttr.get("name");
-					obj.name = resourceName;
-					obj.characterid = charId;
-					obj.current = resourceAttr.get("current");
-					obj.max = resourceAttr.get("max");
+					res = resourceAttr.get("name");
 				}
 			}
 			if(error) {
 				GeneralScripts.WhisperError(scriptName,error);
 				return null;
 			}
-			return obj;
+			return update(res,charId);
 		};
 		
 		return obj;
@@ -100,9 +115,10 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 		/*
 		 * Should only be called after the characterid is set for the object.
 		 */
-		getAttrNotNull = function(n) {
+		getAttrNotNull = function(n, v) {
 			var attr = GeneralScripts.FindAttrForCharacterId(obj.characterid, n);
-			return (attr != null) ? attr.get("current") : "";
+			if(v == null) { v = "current"; }
+			return (attr != null) ? attr.get(v) : "";
 		};
 		
 		obj.set = function(n,v) {
@@ -239,9 +255,10 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 		/*
 		 * Should only be called after the characterid is set for the object.
 		 */
-		getAttrNotNull = function(n) {
+		getAttrNotNull = function(n, v) {
 			var attr = GeneralScripts.FindAttrForCharacterId(obj.characterid, n);
-			return (attr != null) ? attr.get("current") : "";
+			if(v == null) { v = "current"; }
+			return (attr != null) ? attr.get(v) : "";
 		},
 		
 		
