@@ -1,130 +1,178 @@
 var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 	'use strict';
 	
-	var version = 0.1,
+	var version = 2.0,
 		scriptName = "5e OGL Companion",
-	
-	getResourceWithName = function(resourceName, characterId) {
-		var error = null;
-		// See if the 
-		var resourceNameAttr = findObjs({_type:"attribute",characterid:characterId,current:resourceName})[0];
-		var resource;
-		if(!resourceNameAttr) {
-			error = "Could not find resource with name '" + resourceName + "' for character with id '" + characterId + "'";
-		}
 		
-		if(error){
-			GeneralScripts.WhisperError(scriptName, error);
-			return null;
-		}
+	Resource = Resource || (function(){
+		var obj = {};
+			obj.resource = "";
+			obj.name = "";
+			obj.current = "";
+			obj.max = "";
+			obj.characterid = "";
+			
+			var name_suffix = "_name";
 		
-		var resource = GeneralScripts.FindAttrForCharacterId(characterId, resourceNameAttr.get("name").replace("_name",""));
-		if(!resource) {
-			error = "Could not find resource values for resource with name '" + resourceNameAttr.get("name").replace("_name","") + "' for the character";
-		}
-		
-		if(error){
-			GeneralScripts.WhisperError(scriptName, error);
-			return null;
-		}
-		
-		return {
-			"resource": resource.get("name"),
-			"name": resourceName,
-			"current": resource.get("current"),
-			"max": resource.get("max"),
-			"characterid": characterId,
-			set: function(n, v) {
-				if(n === "name") {
-					var attribute = GeneralScripts.FindAttrForCharacterId(this.characterid, this.resource + "_name");
-					attribute.set("current", v);
-				} else if (n === "current" || n === "max") {
-					var attribute = GeneralScripts.FindAttrForCharacterId(this.characterid, this.resource);
-					attribute.set(n,v);
-				} else {
+		obj.set = function(n,v) {
+			var attr;
+			switch (n) {
+				case "name":
+					obj.name = v;
+					attr = GeneralScripts.FindAttrForCharacterId(characterid, obj.resource + name_prefix);
+					attr.set("current", v);
+					break;
+				case "current":
+				case "max":
+					if(n === "current") { obj.current = v; }
+					else { obj.max = v; }
+					attr = GeneralScripts.FindAttrForCharacterId(obj.characterid, obj.resource);
+					attr.set(n, v);
+					break;
+				default:
 					log("Could not find attribute '" + n + "' for resource");
+			}
+			return obj;
+		};
+		
+		obj.getForName = function(resourceName, charId) {
+			log("getForName");
+			var error = null;
+			// See if the resource with the name exists
+			var resourceNameAttr = findObjs({_type:"attribute",characterid:charId,current:resourceName})[0];
+			if(!resourceNameAttr) {
+				error = "Could not find resource with name '" + resourceName + "' for character with id '" + charId + "'";
+			} else {
+				log(resourceNameAttr);
+				var resourceAttr = GeneralScripts.FindAttrForCharacterId(charId, resourceNameAttr.get("name").replace(name_suffix,""));
+				log(resourceAttr);
+				if(!resourceAttr) {
+					error = "Could not find resource values for resource with name '" + resourceNameAttr.get("name").replace(name_suffix,"") + "' for the character with id '" + charId + "'";
+				} else {
+					obj.resource = resourceAttr.get("name");
+					obj.name = resourceName;
+					obj.characterid = charId;
+					obj.current = resourceAttr.get("current");
+					obj.max = resourceAttr.get("max");
 				}
 			}
-		}
-	},
+			if(error) {
+				GeneralScripts.WhisperError(scriptName,error);
+				return null;
+			}
+			return obj;
+		};
 		
-		repeating_inventory_prefix = "repeating_inventory_",
-		itemname_suffix = "_itemname",
-		itemweight_suffix = "_itemweight",
-		itemcontent_suffix = "_itemcontent",
-		itemtype_suffix = "_itemtype",
-		equippedflag_suffix = "_equippedflag",
-		itemdamage_suffix = "_itemdamage",
-		itemdamagetype_suffix = "_itemdamagetype",
-		itemattackid_suffix = "_itemattackid",
-		itemac_suffix = "_itemac",
-		itemcount_suffix = "_itemcount",
-	getItemWithName = function(itemName, characterId) {
-		var error = null;
-		// See if the item with the given name exists
-		var itemNameAttr = findObjs({_type:"attribute",characterid:characterId,current:itemName})[0];
-		log(itemNameAttr)
-		if(!itemNameAttr) {
-			error = "Could not find item with name '" + itemName + "' for character with id '" + characterId + "'";
-			GeneralScripts.WhisperError(scriptName, error);
-			return null;
-		}
-		// Get each of the attributes that contain the individual values of the item.
-		var prefix = itemNameAttr.get("name").replace(itemname_suffix, ""),
-			rowid = prefix.replace(repeating_inventory_prefix,""),
-			weight = GeneralScripts.FindAttrForCharacterId(characterId,prefix + itemweight_suffix),
-			content = GeneralScripts.FindAttrForCharacterId(characterId,prefix + itemcontent_suffix),
-			type = GeneralScripts.FindAttrForCharacterId(characterId,prefix + itemtype_suffix),
-			equippedflag = GeneralScripts.FindAttrForCharacterId(characterId,prefix + equippedflag_suffix),
-			damage = GeneralScripts.FindAttrForCharacterId(characterId,prefix + itemdamage_suffix),
-			damagetype = GeneralScripts.FindAttrForCharacterId(characterId,prefix + itemdamagetype_suffix),
-			attackid = GeneralScripts.FindAttrForCharacterId(characterId,prefix + itemattackid_suffix),
-			ac = GeneralScripts.FindAttrForCharacterId(characterId,prefix + itemac_suffix),
-			count =  GeneralScripts.FindAttrForCharacterId(characterId, prefix + itemcount_suffix);
+		return obj;
+	}()),
+	
+	Item = Item || (function(){
+		var obj = {};
+			obj.rowid = "";
+			obj.characterid = "";
+			obj.name = "";
+			obj.count = "";
+			obj.weight = "";
+			obj.ac = "";
+			obj.attackid = "";
+			obj.content = "";
+			obj.damage = "";
+			obj.damagetype = "";
+			obj.equippedflag = "";
+			obj.modifiers = "";
+			obj.properties = "";
+			obj.type = "";
+			
+		var repeating_inventory_prefix = "repeating_inventory_",
+			ac_suffix = "_itemac",
+			attackid_suffix = "_itemattackid",
+			content_suffix = "_itemcontent",
+			count_suffix = "_itemcount",
+			damage_suffix = "_itemdamage",
+			damagetype_suffix = "_itemdamagetype",
+			equippedflag_suffix = "_equippedflag",
+			modifiers_suffix = "_itemmodifiers",
+			name_suffix = "_itemname",
+			properties_suffix = "_itemproperties",
+			type_suffix = "_itemtype",
+			weight_suffix = "_itemweight",
 		
-		// Return the values packaged as a nice object.
-		return {
-			"rowid": rowid,
-			"prefix": prefix,
-			"name": itemName,
-			"characterid": characterId,
-			"weight": (weight != null) ? weight.get("current") : "",
-			"content": (content != null) ? content.get("current") : "",
-			"type": (type != null) ? type.get("current") : "",
-			"equippedflag": (equippedflag != null) ? type.get("current") : "",
-			"damage": (damage != null) ? damage.get("current") : "",
-			"damagetype": (damagetype != null) ? damagetype.get("current") : "",
-			"attackid": (attackid != null) ? attackid.get("current") : "",
-			"ac": (ac != null) ? ac.get("current") : "",
-			"count": (count != null) ? count.get("current") : "",
-			set: function(n, v) {
-				var suffix;
-				if(n === "name") { suffix = itemname_suffix; this.name = v; } 
-				else if (n === "weight") { suffix = itemweight_suffix; this.weight = v; }
-				else if (n === "content") { suffix = itemcontent_suffix; this.content = v; }
-				else if (n === "type") { suffix = itemtype_suffix; this.type = v; }
-				else if (n === "equippedflag") { suffix = equippedflag_suffix; this.equippedflag = v; }
-				else if (n === "damage") { suffix = itemdamage_suffix; this.damage = v; }
-				else if (n === "damagetype") { suffix = itemdamagetype_suffix; this.damagetype = v; }
-				else if (n === "attackid") { suffix = itemattackid_suffix; this.attackid = v; }
-				else if (n === "ac") { suffix = itemac_suffix; this.ac = v; }
-				else if (n === "count") { suffix = itemcount_suffix; this.count = v; }
-				else {
+		/*
+		 * Should only be called after the characterid is set for the object.
+		 */
+		getAttrNotNull = function(n) {
+			var attr = GeneralScripts.FindAttrForCharacterId(obj.characterid, n);
+			return (attr != null) ? attr.get("current") : "";
+		};
+		
+		obj.set = function(n,v) {
+			var suffix = null;
+			switch(n){
+				case "ac": obj.ac = v; suffix = ac_suffix; break;
+				case "attackid": obj.attackid = v; suffix = attackid_suffix; break;
+				case "content": obj.content = v; suffix = content_suffix; break;
+				case "count": obj.count = v; suffix = count_suffix; break;
+				case "damage": obj.damage = v; suffix = damage_suffix; break;
+				case "damagetype": obj.damagetype = v; suffix = damagetype_suffix; break;
+				case "equippedflag": obj.equippedflag = v; suffix = equippedflag_suffix; break;
+				case "modifiers": obj.modifiers = v; suffix = modifiers_suffix; break;
+				case "name": obj.name = v; suffix = name_suffix; break;
+				case "properties": obj.properties = v; suffix = properties_suffix; break;
+				case "type": obj.type = v; suffix = type_suffix; break;
+				case "weight": obj.weight = v; suffix = weight_suffix; break;
+				default:
 					log("Could not find attribute '" + n + "' for resource");
-					return;
-				}
-				var attribute = GeneralScripts.FindAttrForCharacterId(this.characterid, this.prefix + suffix);
-				if(!attribute) {
-					attribute = createObj("attribute",{
-						name: this.prefix + suffix,
-						characterid: this.characterid,
+					break;
+			}
+			if(suffix) {
+				var attr = GeneralScripts.FindAttrForCharacterId(obj.characterid, repeating_inventory_prefix + obj.rowid + suffix);
+				if(!attr) {
+					attr = createObj("attribute",{
+						name: repeating_inventory_prefix + obj.rowid + suffix,
+						characterid: obj.characterid,
 						current: ""
 					});
 				}
-				attribute.set("current", v);
+				attr.set("current",v);
 			}
-		}
-	},
+			return obj;
+		};
+		
+		obj.getForName = function(itemName, charId) {
+			log("Item.getForName");
+			var error = null;
+			// See if the item with the given name exists
+			var itemNameAttr = findObjs({_type:"attribute",characterid:charId,current:itemName})[0];
+			if(!itemNameAttr) {
+				error = "Could not find item with name '" + itemName + "' in inventory for character with id '" + charId + "'";
+			}
+			if(error) { 
+				GeneralScripts.WhisperError(scriptName, error); 
+				return null;
+			}
+			// Get each of the attributes that contain the individual values of the item.
+			var prefix = itemNameAttr.get("name").replace(name_suffix, "");
+							
+			obj.rowid =        prefix.replace(repeating_inventory_prefix,"");
+			obj.name =         itemName;
+			obj.characterid =  charId;
+			obj.weight =       getAttrNotNull(prefix + weight_suffix);
+			obj.content =      getAttrNotNull(prefix + content_suffix);
+			obj.type =         getAttrNotNull(prefix + type_suffix);
+			obj.equippedflag = getAttrNotNull(prefix + equippedflag_suffix);
+			obj.damage =       getAttrNotNull(prefix + damage_suffix);
+			obj.damagetype =   getAttrNotNull(prefix + damagetype_suffix);
+			obj.attackid =     getAttrNotNull(prefix + attackid_suffix);
+			obj.ac =           getAttrNotNull(prefix + ac_suffix);
+			obj.count =        getAttrNotNull(prefix + count_suffix);
+			obj.modifiers =    getAttrNotNull(prefix + modifiers_suffix);
+			obj.properties =   getAttrNotNull(prefix + properties_suffix);
+				
+			return obj;
+		};
+		
+		return obj;
+	}()),
 	
 		repeating_spell_prefix = "repeating_spell-",
 		spellname_base_suffix = "_spellname_base",
@@ -323,8 +371,8 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 	return {
 		CheckInstall: checkInstall,
 		Parse5eOglRollTemplateSimple: parse5eOglRollTemplateSimple,
-		GetResourceWithName: getResourceWithName,
-		GetItemWithName: getItemWithName,
+		GetResourceWithName: Resource.getForName,
+		GetItemWithName: Item.getForName,
 	};
 }());
 
