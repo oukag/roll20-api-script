@@ -16,6 +16,7 @@
 
 var HitpointTracker = HitpointTracker || (function(){
 	'use strict';
+	var obj = {};
 
 	var version = 2.1,
 		scriptName = "Hitpoint Tracker",
@@ -855,6 +856,60 @@ var HitpointTracker = HitpointTracker || (function(){
 		return isTokenRaging(GeneralScripts.GetTokensForCharacter(character)[0]);
 	},
 	
+	deathSaveEventHandler = function(msg) {
+		if(msg.rolltemplate && msg.rolltemplate === "simple" && msg.content.indexOf("^{death-save-u}") !== -1) {
+			// Because of the way GeneralScripts.ParseTemplate splits based on '}}' the template for Death Saves interfere with the parsing.
+			// To resolve this issue, we replace the rname with different name and assert that our change is there after parsing.
+			msg.content = msg.content.replace("^{death-save-u}", "DEATH SAVE");
+			var simple = Kyle5eOglCompanion.Parse5eOglRollTemplateSimple(msg);
+			log(simple);
+			if(simple && simple.rname === "DEATH SAVE" && simple.charname !== ""){
+				// Now we need to get the character for the charname output
+				var character = GeneralScripts.GetCharacterForName(simple.charname);
+				var roll = simple.r1;
+				if(simple.r2 && simple.advantage == 1 && simple.r2.total > roll.total 
+					|| simple.r2 && simple.disadvantage == 1 && simple.r2.toal < roll.total) {
+					roll = simple.r2;
+				}
+				var result = roll.total;
+				var resultbase = (roll.inlinerolls.results.rolls[0].results[1]) ? roll.inlinerolls.results.rolls[0].results[1].v : roll.inlinerolls.results.rolls[0].results[0].v;
+				var critfail = (resultbase ===  1);
+				var critsucc = (resultbase === 20);
+				var resultoutput = "";
+				if(critsucc) {
+					resultoutput = "CRITICAL SUCCESS: 1HP";
+					clearDeathSavesForCharacter(character);
+					healCharacter(character.id,1);
+				} else if( result < 10 || critfail) {
+					var f1 = GeneralScripts.FindOrCreateAttrWithName(character.id,"deathsave_fail1");
+					var f2 = GeneralScripts.FindOrCreateAttrWithName(character.id,"deathsave_fail2");
+					var f3 = GeneralScripts.FindOrCreateAttrWithName(character.id,"deathsave_fail3");
+					var fails = [f1.get("current") === "on",f2.get("current") === "on", f3.get("current") === "on"];
+					
+					if(!fails[0])       { f1.set({current:"on"}); resultoutput = "FAILED 1 of 3"; }
+					else if (!fails[1]) { f2.set({current:"on"}); resultoutput = "FAILED 2 of 3"; }
+					else                { f3.set({current:"on"}); resultoutput = "DECEASED";      }
+					
+					if(critfail) {
+						if(!fails[0])   { f2.set({current:"on"}); resultoutput = "FAILED 2 of 3"; }
+						else            { f3.set({current:"on"}); resultoutput = "DECEASED";      }
+					}
+				} else {
+					var s1 = GeneralScripts.FindOrCreateAttrWithName(character.id,"deathsave_succ1");
+					var s2 = GeneralScripts.FindOrCreateAttrWithName(character.id,"deathsave_succ2");
+					var s3 = GeneralScripts.FindOrCreateAttrWithName(character.id,"deathsave_succ3");
+					var succs = [s1.get("current") === "on",s2.get("current") === "on",s3.get("current") === "on"];
+					
+					if(!succs[0])      { s1.set({current:"on"}); resultoutput = "SUCCEEDED 1 of 3"; }
+					else if(!succs[1]) { s2.set({current:"on"}); resultoutput = "SUCCEEDED 2 of 3"; }
+					else               { s3.set({current:"on"}); resultoutput = "STABILIZED";       }
+				}
+				var output = Kyle5eOglCompanion.Format5eOglRollTemplateDecription(resultoutput);
+				sendChat("character|" + character.id, "@{" + simple.charname + "|wtype}" + output);
+			}
+		}
+	},
+	
 	hitDiceEventHandler = function(msg) {
 		if(msg.rolltemplate && msg.rolltemplate === "simple" && msg.content.indexOf("^{hit-dice-u}") !== -1) {
 			// Because of the way GeneralScripts.ParseTemplate splits based on '}}' the template for Hit Dice interfere with the parsing.
@@ -1018,38 +1073,36 @@ var HitpointTracker = HitpointTracker || (function(){
 			+ "|Supreme,SUPREME HEALING&#125;&#125; {{r1=[[10d4cs0cf0+20]]"
 			+ "}}} {{mod=}} @{selected|charname_output}";
 		macro.set("action",action);
-	},
+	};
 
 	/**
 	 * Displays to the API console that the script has loaded properly. Only used when the API is reloaded.
 	 */
-	checkInstall = function() {
+	obj.checkInstall = function() {
 		log(scriptName + " v" + version + " Ready");
 		updatePotionMacro();
-	},
+	};
 
 	/**
 	 * Registers the various event handlers that are used by the script.
 	 */
-	registerEventHandlers = function() {
+	obj.registerEventHandlers = function() {
 		on("change:token:bar1_value", updateHealthStatus);
 		on("change:attribute:current", clearDeathSavingThrows);
 		on("chat:message", handleModHealth);
 		on("chat:message", handleToggleConcentration);
 		on("chat:message", handleToggleRage);
+		on("chat:message", deathSaveEventHandler);
 		on("chat:message", hitDiceEventHandler);
 		on("chat:message", secondWindEventHandler);
 		on("chat:message", healingPotionEventHandler);
 	};
 
-	return {
-		CheckInstall: checkInstall,
-		RegisterEventHandlers: registerEventHandlers
-	};
+	return obj;
 }());
 
 on('ready', function() {
     'use strict';
-    HitpointTracker.CheckInstall();
-    HitpointTracker.RegisterEventHandlers();
+    HitpointTracker.checkInstall();
+    HitpointTracker.registerEventHandlers();
 });

@@ -15,10 +15,6 @@ var GeneralScripts = GeneralScripts || (function(){
 				+ " {{charname="+charname+"}}";
 	},
 	
-	formatTemplateDescription = function(desc) {
-		return "&{template:desc} {{desc=" + desc + "}}";
-	},
-	
 	formatTemplateAttack = function(mod,rname,r1,r2,range,desc,charname) {
 		return "&{template:atk}"
 				+ " {{mod=" + mod + "}}"
@@ -147,6 +143,28 @@ var GeneralScripts = GeneralScripts || (function(){
 		return result;
 	},
 	
+	findOrCreateAttrWithName = function(charId, attrName) {
+		var attr = findObjs({_type:"attribute",characterid:charId,name:attrName})[0];
+		if(attr) { return attr; }
+		else { return createObj("attribute", {characterid:charId, name:attrName, current:""});}
+	},
+	
+	getSenderForName = function(name) {		
+		var character = getCharacterForName(name),
+			player = findObjs({
+				type: 'player',
+				displayname: name.lastIndexOf(' (GM)') === name.length - 5 ? name.substring(0, name.length - 5) : name
+			})[0];
+		
+		if (player) {
+			return 'player|' + player.id;
+		}
+		if (character) {
+			return 'character|' + character.id;
+		}
+		return name;
+	},
+	
 	checkInstall = function() {
 		log(scriptName + " v" + version + " Ready");
 	};
@@ -162,9 +180,11 @@ var GeneralScripts = GeneralScripts || (function(){
 		GetCharacterForName: getCharacterForName,
 		GetCharacterForTokenId: getCharacterForTokenId,
 		GetTokensForCharacter: getTokensForCharacter,
+		GetSenderForName: getSenderForName,
 		FindAttrForCharacter: findAttrForCharacter,
 		FindAttrForCharacterId: findAttrForCharacterId,
 		ParseTemplate: parseTemplate,
+		FindOrCreateAttrWithName: findOrCreateAttrWithName,
 	};
 })();
 

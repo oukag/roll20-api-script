@@ -7,31 +7,39 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 	Resource = Resource || (function(){
 		var obj = {};
 			obj.resource = "";
+			obj.id = "";
 			obj.name = "";
 			obj.current = "";
 			obj.max = "";
+			obj.itemid = "";
 			obj.characterid = "";
 			
-			var name_suffix = "_name",
+		var name_suffix = "_name",
+			itemid_suffix = "_itemid",
 		
 		/*
 		 * Should only be called after the characterid is set for the object.
 		 */
 		getAttrNotNull = function(n, v) {
+			log("Resource.getAttrNotNull(" + n + "," + v + ")");
 			var attr = GeneralScripts.FindAttrForCharacterId(obj.characterid, n);
 			if(v == null) { v = "current"; }
 			return (attr != null) ? attr.get(v) : "";
 		},
 		
 		update = function(res,charId) {
-			log("update Resource");
+			log("Resource.update(" + res + "," + charId + ")");
 			obj.resource = res;
 			obj.characterid = charId;
 			
 			obj.name = getAttrNotNull(res + name_suffix);
-			obj.current = getAttrNotNull(res);
-			obj.max = getAttrNotNull(res, "max");
-			log(obj);
+			obj.itemid = getAttrNotNull(res + itemid_suffix);
+			
+			var attr = GeneralScripts.FindAttrForCharacterId(obj.characterid, res);
+			obj.current = attr ? attr.get("current") : "";
+			obj.max = attr ? attr.get("max") : "";
+			obj.id = attr ? attr.id : "";
+			// log(obj);
 			return obj;
 		};
 		
@@ -57,10 +65,15 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 		};
 		
 		obj.getForName = function(resourceName, charId) {
-			log("getForName");
+			log("Resource.getForName(" + resourceName + "," + charId + ")");
 			var res = null, error = null;
 			// See if the resource with the name exists
-			var resourceNameAttr = findObjs({_type:"attribute",characterid:charId,current:resourceName})[0];
+			var resourceNameAttr = null;
+			_.each(findObjs({_type:"attribute",characterid:charId,current:resourceName}), function(attr){
+				if(attr.get("name").indexOf(name_suffix) !== -1){
+					resourceNameAttr = attr;
+				}
+			});
 			if(!resourceNameAttr) {
 				error = "Could not find resource with name '" + resourceName + "' for character with id '" + charId + "'";
 			} else {
@@ -76,6 +89,17 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 				return null;
 			}
 			return update(res,charId);
+		};
+		
+		obj.getForId = function(resId) {
+			//log("getForId");
+			var error = null;
+			var resourceAttr = getObj("attribute", resId);
+			if(!resourceAttr) {
+				GeneralScripts.WhisperError(scriptName,"Could not find resource with id '" + resId + "'");
+				return null; 
+			}
+			return update(resourceAttr.get("name"), resourceAttr.get("characterid"));
 		};
 		
 		return obj;
@@ -96,6 +120,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 			obj.equippedflag = "";
 			obj.modifiers = "";
 			obj.properties = "";
+			obj.resourceid = "";
 			obj.type = "";
 			
 		var repeating_inventory_prefix = "repeating_inventory_",
@@ -109,6 +134,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 			modifiers_suffix = "_itemmodifiers",
 			name_suffix = "_itemname",
 			properties_suffix = "_itemproperties",
+			resourceid_suffix = "_itemresourceid",
 			type_suffix = "_itemtype",
 			weight_suffix = "_itemweight",
 		
@@ -155,10 +181,16 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 		};
 		
 		obj.getForName = function(itemName, charId) {
-			log("Item.getForName");
+			log("Item.getForName " + itemName + ", " + charId);
 			var error = null;
 			// See if the item with the given name exists
-			var itemNameAttr = findObjs({_type:"attribute",characterid:charId,current:itemName})[0];
+			var itemNameAttr = null; 
+			_.each(findObjs({_type:"attribute",characterid:charId,current:itemName}),function(attr){
+				if(attr.get("name").indexOf(name_suffix) !== -1 && attr.get("name").indexOf(repeating_inventory_prefix) !== -1) {
+					itemNameAttr = attr;
+				}
+			});
+			log(itemNameAttr);
 			if(!itemNameAttr) {
 				error = "Could not find item with name '" + itemName + "' in inventory for character with id '" + charId + "'";
 			}
@@ -183,6 +215,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 			obj.count =        getAttrNotNull(prefix + count_suffix);
 			obj.modifiers =    getAttrNotNull(prefix + modifiers_suffix);
 			obj.properties =   getAttrNotNull(prefix + properties_suffix);
+			obj.resourceid =   getAttrNotNull(prefix + resourceid_suffix);
 				
 			return obj;
 		};
@@ -433,6 +466,10 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 			
 			return obj;
 		};
+	
+		obj.formatOutput = function(desc) {
+			return "&{template:desc} {{desc=" + desc + "}}";
+		};
 		
 		return obj;
 	}()),
@@ -450,6 +487,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 			obj.range = null;
 			obj.desc = null;
 			obj.charname = null;
+			obj.ammo = "";
 		
 		obj.parse = function(msg){
 			if(msg.rolltemplate !== "atk") { return null; }
@@ -477,6 +515,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 					case "r1": obj.r2 = getRollForIndex(msgv); break;
 				}
 			});
+			obj.ammo = (msg.content.split("ammo=")[1]||'').split(" {{charname=")[0];
 			
 			return obj;
 		};
@@ -484,19 +523,69 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 		return obj;
 	}()),
 	
+	handleammo = function(msg) {
+		if(msg.content.indexOf("ammo=") === -1) {
+			// UNABLE TO FIND AMMO
+			return;
+		}
+		var template = RollTemplate_Atk.parse(msg);
+		log(template);
+		if(!template || template.ammo === "") { return; }
+		
+		var character = GeneralScripts.GetCharacterForName(template.charname);
+		var ammofull = template.ammo;
+		var ammoresource = null;
+		if(ammofull.substring(0,1) === "-") {
+			ammoresource = Resource.getForId(ammofull);
+		}
+		else if(ammofull.indexOf("|") > -1) {
+			ammoresource = Resource.getForId(ammofull.split("|")[1]);
+			log(ammoresource);
+		}
+		else {
+			ammoresource = Resource.getForName(ammofull, character.id);
+		}
+		//ammoresource = findObjs({type: 'attribute', characterid: character.id, id: ammoid}, {caseInsensitive: true})[0];
+		if(ammoresource && ammoresource.name !== "") {
+			//log("handleammo - resource exists");
+			ammoresource.set("current", parseInt(ammoresource.current) - 1);
+			log(ammoresource);
+			//var ammoitemid = getAttrByName(character.id, ammoresource.resource + "_itemid");
+			var ammoitem = Item.getForName(ammoresource.name,character.id);
+			//log("ammoitem");
+			log(ammoitem);
+			if(ammoitem) {
+				ammoitem.set("count", parseInt(ammoitem.count) - 1);
+				var totalweight = findObjs({type: 'attribute', characterid: character.id, name: "weighttotal"}, {caseInsensitive: true})[0];
+				if(ammoitem.weight && totalweight) {
+					totalweight.set({current: parseInt(totalweight.get("current")) - parseInt(ammoitem.weight)});
+				}
+			}
+			var output = RollTemplate_Description.formatOutput(ammoresource.name + ": " + (ammoresource.current > 0) ? ammoresource.current  + " LEFT" : "OUT OF AMMO");
+			sendChat(GeneralScripts.GetSenderForName(msg.who),output)
+		}
+	},
+	
+	registerEventHandlers = function() {
+		on("chat:message", handleammo);
+	},
+	
 	checkInstall = function() {
 		log(scriptName + " v" + version + " Ready");
 	};
 
 	return {
 		CheckInstall: checkInstall,
+		RegisterEventHandlers: registerEventHandlers,
 		Parse5eOglRollTemplateSimple: RollTemplate_Simple.parse,
 		GetResourceWithName: Resource.getForName,
 		GetItemWithName: Item.getForName,
+		Format5eOglRollTemplateDecription: RollTemplate_Description.formatOutput,
 	};
 }());
 
 on('ready', function(){
 	'use strict'
 	Kyle5eOglCompanion.CheckInstall();
+	Kyle5eOglCompanion.RegisterEventHandlers();
 });
