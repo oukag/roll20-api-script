@@ -2,7 +2,7 @@
  *	Useful Macros
  *
  *	Damage
- *		!modHealth --sel --damage ?{Damage|0} ?{Type|Acid,acid|Bludgeoning,bludgeoning|Cold,cold|Fire,fire|Force,force|Lightning,lightning|Necrotic,necrotic|Piercing,piercing|Poison,poison|Psychic,psychic|Radiant,radiant|Slashing,slashing|Thunder,thunder|Bludgeoning Magical,bludgeoning(magic)|Piercing Magical,piercing(magic)|Slashing Magical,slashing(magic)}
+ *		!modHealth --sel --damage ?{Damage|0} ?{Type|Acid|Bludgeoning|Cold|Fire|Force|Lightning|Necrotic|Piercing|Poison|Psychic|Radiant|Slashing|Thunder|Bludgeoning(Magic)|Piercing(Magic)|Slashing(Magic)}
  *
  *	Heal
  *		!modHealth --sel --heal ?{Healing|0}
@@ -135,7 +135,7 @@ var HitpointTracker = HitpointTracker || (function(){
 			},
 			
 			isRageResistantToType:	function(character,keyword) {
-				var typeIndex = this.getIndexForKeyword(keyword);
+				var typeIndex = this.getIndexForKeyword(keyword.toLowerCase());
 				if(typeIndex == 0) {
 					log("Damage Type '" + keyword + "' not found");
 					return false;
@@ -1073,6 +1073,34 @@ var HitpointTracker = HitpointTracker || (function(){
 			+ "|Supreme,SUPREME HEALING&#125;&#125; {{r1=[[10d4cs0cf0+20]]"
 			+ "}}} {{mod=}} @{selected|charname_output}";
 		macro.set("action",action);
+	},
+	
+	damageEventHandler = function(msg){
+		if(msg.rolltemplate !== "atkdmg" && msg.rolltemplate !== "dmg" && msg.rolltemplate !== "npcaction") { return;}
+		var atkdmg = Kyle5eOglCompanion.Parse5eOglRollTemplateAtkdmg(msg);
+		var dmg = Kyle5eOglCompanion.Parse5eOglRollTemplateDmg(msg);
+		var npcaction = Kyle5eOglCompanion.Parse5eOglRollTemplateNpcaction(msg);
+		if(!atkdmg && !dmg && !npcaction) { return; }
+		var template = atkdmg ? atkdmg : (dmg ? dmg : npcaction);
+		log(template);
+		var saveForHalf = (template.save && template.savedesc && template.savedesc.toLowerCase().indexOf("half") !== -1) ? true : false;
+		var str = "[Apply name](!modHealth --sel --damage amount type)";
+		var dmg1  = (template.dmg1flag && template.dmg1type) ? str.replace("name", "dmg1").replace("amount", template.dmg1.total).replace("type", template.dmg1type) : null,
+			crit1 = (template.crit1    && template.dmg1type) ? str.replace("name", "crit1").replace("amount", template.dmg1.total + template.crit1.total).replace("type", template.dmg1type) : null,
+			dmg2  = (template.dmg2flag && template.dmg2type) ? str.replace("name", "dmg2").replace("amount", template.dmg2.total).replace("type", template.dmg2type) : null,
+			crit2 = (template.crit2    && template.dmg2type) ? str.replace("name", "dmg2").replace("amount", template.dmg2.total + template.crit2.total).replace("type", template.dmg2type) : null,
+			hldmg = (template.hldmg    && template.dmg1type) ? str.replace("name", "hldmg").replace("amount", template.dmg1.total + template.hldmg.total + (template.crit1 ? template.crit1.total : 0)).replace("type", template.dmg1type) : null,
+			savedmg1 = (saveForHalf    && template.dmg1type) ? str.replace("name", "save").replace("amount", Math.floor((template.dmg1.total + (template.hldmg ? template.hldmg.total : 0) + (template.crit1 ? template.crit1.total : 0)) * 0.5)).replace("type", template.dmg1type) : null;
+			
+		
+		var output = "&{template:desc} {{desc="
+			+ (dmg1 ? dmg1 : "") + (crit1 ? crit1 : "") + (hldmg ? hldmg : "")
+			+ (dmg2 ? dmg2 : "") + (crit2 ? crit2 : "") + (savedmg1 ? savedmg1 : "")
+		+ "}}";
+		
+		log(output);
+			
+		GeneralScripts.WhisperGM(scriptName, output);
 	};
 
 	/**
@@ -1096,6 +1124,7 @@ var HitpointTracker = HitpointTracker || (function(){
 		on("chat:message", hitDiceEventHandler);
 		on("chat:message", secondWindEventHandler);
 		on("chat:message", healingPotionEventHandler);
+		on("chat:message", damageEventHandler);
 	};
 
 	return obj;

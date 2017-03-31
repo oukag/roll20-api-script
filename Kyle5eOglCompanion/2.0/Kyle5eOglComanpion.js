@@ -406,6 +406,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 	
 	RollTemplate_Simple = RollTemplate_Simple || (function(){
 		var obj = {};
+			obj.type = "simple";
 			obj.rname = null;
 			obj.mod = null;
 			obj.normal = 0;
@@ -452,6 +453,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 	
 	RollTemplate_Description = RollTemplate_Description || (function(){
 		var obj = {};
+			obj.type = "desc";
 			obj.desc = null;
 		
 		obj.parse = function(msg) {
@@ -476,6 +478,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 	
 	RollTemplate_Atk = RollTemplate_Atk || (function(){
 		var obj = {};
+			obj.type = "atk";
 			obj.rname = null;
 			obj.mod = null;
 			obj.normal = 0;
@@ -502,8 +505,8 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 					case "advantage":    obj.advantage = parseInt(v);    break;
 					case "disadvantage": obj.disadvantage = parseInt(v); break;
 					case "always":       obj.always = parseInt(v);       break;
-					case "range":        obj.range = parseInt(v);        break;
-					case "desc":         obj.desc = parseInt(v);         break;
+					case "range":        obj.range = v;                  break;
+					case "desc":         obj.desc = v;                   break;
 					case "charname":     obj.charname = v;               break;
 				}
 			});
@@ -512,10 +515,221 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 				var v = (field[1] != null) ? parseInt(field[1].replace("$[[","").replace("]]","")) : null;
 				switch (field[0]) {
 					case "r1": obj.r1 = getRollForIndex(msg,v); break;
-					case "r1": obj.r2 = getRollForIndex(msgv); break;
+					case "r2": obj.r2 = getRollForIndex(msg,v); break;
 				}
 			});
 			obj.ammo = (msg.content.split("ammo=")[1]||'').split(" {{charname=")[0];
+			
+			return obj;
+		};
+		
+		return obj;
+	}()),
+	
+	RollTemplate_Atkdmg = RollTemplate_Atkdmg || (function(){
+		var obj = {};
+			obj.type = "atkdmg";
+			obj.rname = null;
+			obj.mod = null;
+			obj.normal = 0;
+			obj.always = 0;
+			obj.advantage = 0;
+			obj.disadvantage = 0;
+			obj.r1 = null;
+			obj.r2 = null;
+			obj.attack = 0;
+			obj.damage = 0;
+			obj.dmg1flag = 0;
+			obj.dmg1 = null;
+			obj.dmg1type = null;
+			obj.crit1 = null;
+			obj.dmg2flag = 0;
+			obj.dmg2 = null;
+			obj.dmg2type = null;
+			obj.crit2 = null;
+			obj.save = 0;
+			obj.saveattr = null;
+			obj.savedesc = null;
+			obj.savedc = null;
+			obj.range = null;
+			obj.desc = null;
+			obj.charname = null;
+			obj.ammo = null;
+			obj.hldmg = null;
+			
+		
+		obj.parse = function(msg) {
+			if(msg.rolltemplate != obj.type) { return null; }
+			var processedContent =  GeneralScripts.ProcessInlineRolls(msg);
+			var content = msg.content;
+			_.each(GeneralScripts.ParseTemplate(processedContent), function(field){
+				var v = field[1] ? field[1] : "";
+				switch (field[0]) {
+					case "rname":        obj.rname = v;                  break;
+					case "mod":          obj.mod = v;                    break;
+					case "normal":       obj.normal = parseInt(v);       break;
+					case "advantage":    obj.advantage = parseInt(v);    break;
+					case "disadvantage": obj.disadvantage = parseInt(v); break;
+					case "always":       obj.always = parseInt(v);       break;
+					case "range":        obj.range = v;                  break;
+					case "desc":         obj.desc = v;                   break;
+					case "charname":     obj.charname = v;               break;
+					case "attack":       obj.attack = parseInt(v);       break;
+					case "damage":       obj.damage = parseInt(v);       break;
+					case "dmg1flag":     obj.dmg1flag = parseInt(v);     break;
+					case "dmg1type":     obj.dmg1type = v;               break;
+					case "dmg2flag":     obj.dmg2flag = parseInt(v);     break;
+					case "dmg2type":     obj.dmg2type = v;               break;
+					case "save":         obj.save = parseInt(v);         break;
+					case "saveattr":     obj.saveattr = v;               break;
+					case "savedesc":     obj.savedesc = v;               break;
+					case "savedc":       obj.savedc = parseInt(v);       break;
+				}
+			});
+			
+			_.each(GeneralScripts.ParseTemplate(content), function(field){
+				var v = (field[1]) ? parseInt(field[1].replace("$[[","").replace("]]","")) : null;
+				switch (field[0]) {
+					case "r1":    obj.r1 = getRollForIndex(msg,v);    break;
+					case "r2":    obj.r2 = getRollForIndex(msg,v);    break;
+					case "dmg1":  obj.dmg1 = getRollForIndex(msg,v);  break;
+					case "dmg2":  obj.dmg2 = getRollForIndex(msg,v);  break;
+					case "crit1": obj.crit1 = getRollForIndex(msg,v); break;
+					case "crit2": obj.crit2 = getRollForIndex(msg,v); break;
+					case "hldmg": obj.hldmg = getRollForIndex(msg,v); break;
+				}
+			});
+			obj.ammo = (msg.content.split("ammo=")[1]||'').split(" {{charname=")[0];
+			
+			return obj;
+		};
+		
+		return obj;
+	}()),
+	
+	RollTemplate_Dmg = RollTemplate_Dmg || (function(){
+		var obj = {};
+			obj.type = "dmg";
+			obj.rname = null;
+			obj.damage = 0;
+			obj.dmg1flag = 0;
+			obj.dmg1 = null;
+			obj.dmg1type = null;
+			obj.crit1 = null;
+			obj.dmg2flag = 0;
+			obj.dmg2 = null;
+			obj.dmg2type = null;
+			obj.crit2 = null;
+			obj.save = 0;
+			obj.saveattr = null;
+			obj.savedesc = null;
+			obj.savedc = null;
+			obj.desc = null;
+			obj.charname = null;
+			obj.hldmg = null;
+			
+		
+		obj.parse = function(msg) {
+			if(msg.rolltemplate != obj.type) { return null; }
+			var processedContent =  GeneralScripts.ProcessInlineRolls(msg);
+			var content = msg.content;
+			_.each(GeneralScripts.ParseTemplate(processedContent), function(field){
+				var v = field[1] ? field[1] : "";
+				switch (field[0]) {
+					case "rname":        obj.rname = v;                  break;
+					case "desc":         obj.desc = v;                   break;
+					case "charname":     obj.charname = v;               break;
+					case "damage":       obj.damage = parseInt(v);       break;
+					case "dmg1flag":     obj.dmg1flag = parseInt(v);     break;
+					case "dmg1type":     obj.dmg1type = v;               break;
+					case "dmg2flag":     obj.dmg2flag = parseInt(v);     break;
+					case "dmg2type":     obj.dmg2type = v;               break;
+					case "save":         obj.save = parseInt(v);         break;
+					case "saveattr":     obj.saveattr = v;               break;
+					case "savedesc":     obj.savedesc = v;               break;
+					case "savedc":       obj.savedc = parseInt(v);       break;
+				}
+			});
+			
+			_.each(GeneralScripts.ParseTemplate(content), function(field){
+				var v = (field[1]) ? parseInt(field[1].replace("$[[","").replace("]]","")) : null;
+				switch (field[0]) {
+					case "dmg1":  obj.dmg1 = getRollForIndex(msg,v);  break;
+					case "dmg2":  obj.dmg2 = getRollForIndex(msg,v);  break;
+					case "crit1": obj.crit1 = getRollForIndex(msg,v); break;
+					case "crit2": obj.crit2 = getRollForIndex(msg,v); break;
+					case "hldmg": obj.hldmg = getRollForIndex(msg,v); break;
+				}
+			});
+			
+			return obj;
+		};
+		
+		return obj;
+	}()),
+	
+	RollTemplate_Npcaction = RollTemplate_Npcaction || (function(){
+		var obj = {};
+			obj.type = "npcaction";
+			obj.name = null;
+			obj.rname = null;
+			obj.rnamec = null;
+			obj.r1 = null;
+			obj.r2 = null;
+			obj.desc = null;
+			obj.attack = 0;
+			obj.damage = 0;
+			obj.normal = 0;
+			obj.always = 0;
+			obj.advantage = 0;
+			obj.disadvantage = 0;
+			obj.dmg1flag = 0;
+			obj.dmg2flag = 0;
+			obj.dmg1 = null;
+			obj.dmg2 = null;
+			obj.crit1 = null;
+			obj.crit2 = null;
+			obj.dmg1type = null;
+			obj.dmg2type = null;
+			obj.charname = null;
+		
+		obj.parse = function(msg) {
+			if(msg.rolltemplate != obj.type) { return null; }
+			var processedContent =  GeneralScripts.ProcessInlineRolls(msg);
+			var content = msg.content;
+			_.each(GeneralScripts.ParseTemplate(processedContent), function(field){
+				var v = field[1] ? field[1] : "";
+				switch (field[0]) {
+					case "name":         obj.name = v;                   break;
+					case "rname":        obj.rname = v;                  break;
+					case "rnamec":       obj.rnamec = v;                 break;
+					case "normal":       obj.normal = parseInt(v);       break;
+					case "advantage":    obj.advantage = parseInt(v);    break;
+					case "disadvantage": obj.disadvantage = parseInt(v); break;
+					case "always":       obj.always = parseInt(v);       break;
+					case "range":        obj.range = v;                  break;
+					case "desc":         obj.desc = v;                   break;
+					case "charname":     obj.charname = v;               break;
+					case "attack":       obj.attack = parseInt(v);       break;
+					case "damage":       obj.damage = parseInt(v);       break;
+					case "dmg1flag":     obj.dmg1flag = parseInt(v);     break;
+					case "dmg1type":     obj.dmg1type = v;               break;
+					case "dmg2flag":     obj.dmg2flag = parseInt(v);     break;
+					case "dmg2type":     obj.dmg2type = v;               break;
+				}
+			});
+			
+			_.each(GeneralScripts.ParseTemplate(content), function(field){
+				var v = (field[1]) ? parseInt(field[1].replace("$[[","").replace("]]","")) : null;
+				switch (field[0]) {
+					case "r1":    obj.r1 = getRollForIndex(msg,v);    break;
+					case "r2":    obj.r2 = getRollForIndex(msg,v);    break;
+					case "dmg1":  obj.dmg1 = getRollForIndex(msg,v);  break;
+					case "dmg2":  obj.dmg2 = getRollForIndex(msg,v);  break;
+					case "crit1": obj.crit1 = getRollForIndex(msg,v); break;
+					case "crit2": obj.crit2 = getRollForIndex(msg,v); break;
+				}
+			});
 			
 			return obj;
 		};
@@ -578,6 +792,10 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 		CheckInstall: checkInstall,
 		RegisterEventHandlers: registerEventHandlers,
 		Parse5eOglRollTemplateSimple: RollTemplate_Simple.parse,
+		Parse5eOglRollTemplateAtk: RollTemplate_Atk.parse,
+		Parse5eOglRollTemplateAtkdmg: RollTemplate_Atkdmg.parse,
+		Parse5eOglRollTemplateDmg: RollTemplate_Dmg.parse,
+		Parse5eOglRollTemplateNpcaction: RollTemplate_Npcaction.parse,
 		GetResourceWithName: Resource.getForName,
 		GetItemWithName: Item.getForName,
 		Format5eOglRollTemplateDecription: RollTemplate_Description.formatOutput,
