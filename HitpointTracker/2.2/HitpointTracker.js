@@ -18,6 +18,7 @@ var HitpointTracker = HitpointTracker || (function(){
 	'use strict';
 	var obj = {};
 
+	var version = 2.2,
 		scriptName = "Hitpoint Tracker",
 		modHealthCommand = "!modHealth",
 		toggleConcentrationCommand = "!toggleConcentration",
