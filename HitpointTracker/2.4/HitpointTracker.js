@@ -1123,12 +1123,20 @@ var HitpointTracker = HitpointTracker || (function(){
 		log(msg);
 		if(["atkdmg","dmg", "npcaction", "npcdmg"].indexOf(msg.rolltemplate) === -1) { return; }
 		log("damageEventHandler");
+		/**
+		 * Parses the information from the message and returns it as a nice JSON object
+		 */
 		var template = Kyle5eOglCompanion.ParseRollTemplate(msg);
 		log(template);
+		
 		var saveForHalf = (template.save && template.savedesc && template.savedesc.toLowerCase().indexOf("half") !== -1) ? true : false;
+		
 		var dmg = "[Apply name amount](!modHealth --sel --damage amount type)";
 		var heal = "[Heal name amount](!modHealth --sel --heal amount)";
 		var htype = "Healing";
+		/**
+		 * Get the individual damage values that could exist within the template.
+		 */
 		var dmg1  = (template.dmg1flag && template.dmg1type) ? dmg.replace("name", "dmg1").replace(/amount/g, template.dmg1.total).replace("type", template.dmg1type) : null,
 			crit1 = (template.crit1    && template.dmg1type) ? dmg.replace("name", "crit1").replace(/amount/g, template.dmg1.total + template.crit1.total).replace("type", template.dmg1type) : null,
 			dmg2  = (template.dmg2flag && template.dmg2type) ? dmg.replace("name", "dmg2").replace(/amount/g, template.dmg2.total).replace("type", template.dmg2type) : null,
@@ -1136,6 +1144,10 @@ var HitpointTracker = HitpointTracker || (function(){
 			hldmg = (template.hldmg    && template.dmg1type) ? dmg.replace("name", "hldmg").replace(/amount/g, template.dmg1.total + template.hldmg.total + (template.crit1 ? template.crit1.total : 0)).replace("type", template.dmg1type) : null,
 			savedmg1 = (saveForHalf    && template.dmg1type) ? dmg.replace("name", "save").replace(/amount/g, Math.floor((template.dmg1.total + (template.hldmg ? template.hldmg.total : 0) + (template.crit1 ? template.crit1.total : 0)) * 0.5)).replace("type", template.dmg1type) : null;
 		
+		/**
+		 * Check to see if either of the damage types (dmg1type/dmg2type) are 'Healing' instead of damage. If so, change the API
+		 * command buttons to call !modHealth --heal.
+		 */
 		if(template.dmg1type && template.dmg1type.trim() == "Healing") {
 			dmg1     = dmg1     ? dmg1.replace("Apply", "Heal").replace("--damage", "--heal").replace(" Healing", "")     : null;
 			crit1    = crit1    ? crit1.replace("Apply", "Heal").replace("--damage", "--heal").replace(" Healing", "")    : null;
@@ -1153,6 +1165,9 @@ var HitpointTracker = HitpointTracker || (function(){
 		log(output);
 		
 		if(output != "") {
+			/**
+			 * Whispers the output to the GM by prepending "/w gm " to the front of the text output
+			 */
 			GeneralScripts.WhisperGM(scriptName, Kyle5eOglCompanion.Format5eOglRollTemplateDecription(output));
 		}
 	};
