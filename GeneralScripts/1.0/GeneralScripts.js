@@ -4,39 +4,6 @@ var GeneralScripts = GeneralScripts || (function(){
 
 	var version =1.0,
 		scriptName = "General Scripts",
-	
-	formatTemplateSimple = function(rname, mod, r1, r2, charname){
-		return "&{template:simple}"
-				+ " {{rname=" + rname + "}}"
-				+ " {{mod=" + mod + "}}"
-				+ " {{r1=" + r1 + "}}"
-				+ " {{always=1}}"
-				+ " {{r2=" + r2 + "}}"
-				+ " {{charname="+charname+"}}";
-	},
-	
-	formatTemplateAttack = function(mod,rname,r1,r2,range,desc,charname) {
-		return "&{template:atk}"
-				+ " {{mod=" + mod + "}}"
-				+ " {{rname=" + rname + "}}"
-				+ " {{rnamec=" + rname + "}}"
-				+ " {{r1=" + r1 + "}}"
-				+ " {{always=1}}"
-				+ " {{r2=" + r2 + "}}"
-				+ " {{range=" + range + "}}"
-				+ " {{desc=" + desc + "}}"
-				+ " {{charname=" + charname + "}}";
-	},
-	
-	formatTemplateNpc = function(charname,rname,r1,r2, description) {
-		return "&{template:npcatk}"
-				+ " {{name=" + charname + "}}"
-				+ " {{rname=" + rname + "}}"
-				+ " {{r1=" + r1 + "}}"
-				+ " {{always=1}}"
-				+ " {{r2=" + r2 + "}}"
-				+ " {{description=" + description + "}}";
-	},
 
 	/**
 	 * Converts any inline rolls that are contained in a message sent by the chat log and returns the converted string.
@@ -44,13 +11,8 @@ var GeneralScripts = GeneralScripts || (function(){
 	processInlinerolls = function(msg) {
 		if (_.has(msg, 'inlinerolls')) {
 			return _.chain(msg.inlinerolls)
-				.reduce(function(previous, current, index) {
-					previous['$[[' + index + ']]'] = current.results.total || 0;
-					return previous;
-				},{})
-				.reduce(function(previous, current, index) {
-					return previous.replace(index, current);
-				}, msg.content)
+				.reduce(function(previous, current, index) { previous['$[[' + index + ']]'] = current.results.total || 0; return previous; },{})
+				.reduce(function(previous, current, index) { return previous.replace(index, current); }, msg.content)
 				.value();
 		} else {
 			return msg.content;
@@ -64,41 +26,31 @@ var GeneralScripts = GeneralScripts || (function(){
 	 * I created this because I found it was too easy to make a mistake for finding an attribute when
 	 * using Roll20's findObjs() method for an attribute.
 	 */
-	findAttrForCharacter = function(character, attrName) {
-		return findObjs({
-			_type: "attribute",
-			characterid: character.id,
-			name: attrName
-		},{caseInsensitive: true})[0];
+	findAttr = function(character, attrName) {
+		var charId = character.id ? character.id : character;
+		return findObjs({_type:"attribute",characterid:charId,name:attrName},{caseInsensitive:true})[0];
 	},
 	
-	findAttrForCharacterId = function(characterId, attrName) {
-		return findObjs({
-			_type: "attribute",
-			characterid: characterId,
-			name: attrName
-		},{caseInsensitive: true})[0];
+	findOrCreateAttr = function(character, attrName) {
+		var charId = character.id ? character.id : character;
+		var attr = findAttr(charId, attrName);
+		if(attr) { return attr; }
+		return createObj("attribute", {characterid:charId,name:attrName,current:""});
 	},
 
 	/**
 	 * Allows a message to be sent to the chat log but will not be stored in the archive.
 	 * Useful for display an error message to a specific user.
 	 */
-	mySendChat = function(speakingAs, message) {
-		sendChat(speakingAs, message, null, {noarchive: true});
-	},
+	mySendChat = function(speakingAs, message) {sendChat(speakingAs, message, null, {noarchive: true}); },
 
 	/**
 	 * Allows a message to be seen by the GM in the chat log that will not be stored in the chat archive.
 	 * Useful for displaying a message directly to the GM.
 	 */
-	myWhisperGM = function(speakingAs, message) {
-		mySendChat(speakingAs, "/w gm " + message);
-	},
+	myWhisperGM = function(speakingAs, message) { mySendChat(speakingAs, "/w gm " + message); },
 	
-	whisperError = function(speakingAs, error) {
-		myWhisperGM(speakingAs, "<b style='color:red'>ERROR</b> -> " + error);
-	},
+	whisperError = function(speakingAs, error) { myWhisperGM(speakingAs, "<b style='color:red'>ERROR</b> -> " + error); },
 
 	/**
 	 * Basic method that returns token for the given id
@@ -110,12 +62,7 @@ var GeneralScripts = GeneralScripts || (function(){
 	 */
 	getCharacterForId = function(id) { return getObj("character", id); },
 	
-	getCharacterForName = function(name) {
-		return findObjs({
-			_type: "character",
-			name: name
-		})[0];
-	},
+	getCharacterForName = function(name) { return findObjs({_type: "character",name:name})[0]; },
 
 	/**
 	 * This method returns the character object for the given token id.
@@ -125,12 +72,9 @@ var GeneralScripts = GeneralScripts || (function(){
 		return getCharacterForId(token.get("represents"));
 	},
 	
-	getTokensForCharacter = function(character) {
-		return findObjs({
-			_type: "graphic",
-			_subtype: "token",
-			represents: character.id
-		});
+	getTokensForCharacter = function(character) { 
+		var charId = (character.id ? character.id : character);
+		return findObjs({_type: "graphic",_subtype: "token",represents:charId}); 
 	},
 	
 	parseTemplate = function(content) {
@@ -143,12 +87,6 @@ var GeneralScripts = GeneralScripts || (function(){
 		return result;
 	},
 	
-	findOrCreateAttrWithName = function(charId, attrName) {
-		var attr = findObjs({_type:"attribute",characterid:charId,name:attrName})[0];
-		if(attr) { return attr; }
-		else { return createObj("attribute", {characterid:charId, name:attrName, current:""});}
-	},
-	
 	getSenderForName = function(name) {		
 		var character = getCharacterForName(name),
 			player = findObjs({
@@ -156,21 +94,36 @@ var GeneralScripts = GeneralScripts || (function(){
 				displayname: name.lastIndexOf(' (GM)') === name.length - 5 ? name.substring(0, name.length - 5) : name
 			})[0];
 		
-		if (player) {
-			return 'player|' + player.id;
-		}
-		if (character) {
-			return 'character|' + character.id;
-		}
+		if(player) { return 'player|' + player.id; }
+		if(character) { return 'character|' + character.id; }
 		return name;
+	},
+	
+	handleInput = function(msg) {
+		if(msg.type == "api" && msg.content.indexOf("!groupWhisper") !== -1) {
+			var content =  processInlinerolls(msg);
+			var message = content.replace("!groupWhisper", "").trim();
+			var charnames = [];
+			_.each(msg.selected, function (sel) {
+				var charname = getCharacterForTokenId(sel._id).get("name");
+				mySendChat("GM", "/w \"" + charname + "\" " + message);
+				charnames.push("<br>" + charname);
+			});
+			myWhisperGM(scriptName, "Message sent to " + charnames + "<br><br><b>" + message + "</b>");
+		}
 	},
 	
 	checkInstall = function() {
 		log(scriptName + " v" + version + " Ready");
+	},
+	
+	registerEventHandlers = function() {
+		on("chat:message", handleInput);
 	};
 	
 	return {
 		CheckInstall: checkInstall,
+		RegisterEventHandles: registerEventHandlers,
 		ProcessInlineRolls: processInlinerolls,
 		SendChat: mySendChat,
 		WhisperGM: myWhisperGM,
@@ -181,16 +134,16 @@ var GeneralScripts = GeneralScripts || (function(){
 		GetCharacterForTokenId: getCharacterForTokenId,
 		GetTokensForCharacter: getTokensForCharacter,
 		GetSenderForName: getSenderForName,
-		FindAttrForCharacter: findAttrForCharacter,
-		FindAttrForCharacterId: findAttrForCharacterId,
+		FindAttr: findAttr,
+		FindOrCreateAttr: findOrCreateAttr,
 		ParseTemplate: parseTemplate,
-		FindOrCreateAttrWithName: findOrCreateAttrWithName,
 	};
 })();
 
 on('ready', function(){
 	'use strict'
 	GeneralScripts.CheckInstall();
+	GeneralScripts.RegisterEventHandles();
 });
 
 on("chat:message", function(msg) {
