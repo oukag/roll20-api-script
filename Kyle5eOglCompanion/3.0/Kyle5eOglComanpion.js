@@ -369,6 +369,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 		
 		obj.getForName = function(itemName, charId) {
 			log("Item.getForName " + itemName + ", " + charId);
+			if(!itemName || !charId || isNPC(charId)) { return null; }
 			var error = null;
 			// See if the item with the given name exists
 			var itemNameAttr = null; 
@@ -653,6 +654,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 		 * This is used to find resources, items, spells, and attacks with given names.
 		 */
 		obj.findAttrs = function(character, attrName) {
+			if(!character || !attrName) { return null; }
 			var charId = (character.id) ? character.id : character;
 			return findObjs({_type:"attribute",characterid:charId,current:attrName},{caseInsensitive:true});
 		};
@@ -661,6 +663,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 		 * If no attribute is found, will return a null variable.
 		 */
 		obj.findAttr = function(character, attrName) {
+			if(!character || !attrName) { return null; }
 			var charId = (character.id) ? character.id : character;
 			return findObjs({_type:"attribute",characterid:charId,name:attrName},{caseInsensitive:true})[0];
 		};
@@ -669,6 +672,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 		 * If not default value is provided, sets the current value to an empty string.
 		 */
 		obj.findOrCreateAttr = function(character, attrName, current, max) {
+			if(!character || !attrName) { return null; }
 			var charId = (character.id) ? character.id : character;
 			var attr = obj.findAttr(charId, attrName);
 			if(attr) { return attr; }
@@ -1309,7 +1313,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 	
 	handleAmmo = function(msg) {
 		log("handleAmmo");
-		if(msg.content.indexOf("ammo=") === -1) {
+		if(msg.content.indexOf("ammo=") === -1 || msg.content.indexOf("ammo= charname=") !== -1) {
 			// UNABLE TO FIND AMMO
 			return;
 		}
@@ -1368,9 +1372,9 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 	},
 	
 	isNPC = function(character) {
-		var charId = character.id ? character.id : character;
+		var charId = (character && character.id) ? character.id : character;
 		var attr = General.findOrCreateAttr(charId, SpecificAttributes.NPC);
-		return (attr.get("current") == 1);
+		return (attr && attr.get("current") == 1);
 	},
 	
 	handleSpellSlot = function(msg) {
@@ -2405,7 +2409,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 			// Does the name of the weapon contain magic
 			if(tpl.rname.toLowerCase().indexOf("magic") !== -1) { return true; }
 			// Is one of the damage types magical
-			if(DamageTypes.isMagicalDamage(tpl.dmg1type) || (tpl.dmg2flag && DamageTypes.isMagicalDamage(tpl.dmg2type))){ return true; }
+			if((tpl.dmg1flag && DamageTypes.isMagicalDamage(tpl.dmg1type)) || (tpl.dmg2flag && DamageTypes.isMagicalDamage(tpl.dmg2type))){ return true; }
 			// Does one of the damage rolls contain a label for magic
 			var hasMagicLabel = function(dmg) {
 				if(!dmg || !dmg.inlinerolls || !dmg.inlinerolls.results || !dmg.inlinerolls.results.rolls) { return false; }
