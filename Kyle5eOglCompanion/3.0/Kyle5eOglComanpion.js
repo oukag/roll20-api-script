@@ -717,599 +717,218 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 		return obj;
 	}()),
 	
-	RollTemplateTypes = {
-		SIMPLE    : "simple",
-		DESC      : "desc",
-		ATK       : "atk",
-		ATKDMG    : "atkdmg",
-		DMG       : "dmg",
-		SPELL     : "spell",
-		NPCACTION : "npcaction",
-		NPCDMG    : "npcdmg",
-	},
-	
-	RollTemplate_Simple = RollTemplate_Simple || (function(){
+	RollTemplates = RollTemplates || (function(){
 		var obj = {};
-			obj.type = RollTemplateTypes.SIMPLE;
-			obj.rname = null;
-			obj.mod = null;
-			obj.normal = 0;
-			obj.advantage = 0;
-			obj.disadvantage = 0;
-			obj.always = 0;
-			obj.r1 = null;
-			obj.r2 = null;
-			obj.charname = null;
-			
 		
-		var clearValues = function() {
-			_.each(obj, function(value,key){
-				if(typeof obj[key] != 'function' && key !== 'type') {
-					obj[key] = null;
-				}
-			});
-			return obj;
+		obj.TEMPLATES = {
+			DESC:      { type: 'desc', fields: [{name:'desc', processed: true, expectInt: false}], },
+			SIMPLE:    { type: 'simple',
+				fields: [
+					{name: 'rname',        processed:  true, expectInt: false},
+					{name: 'mod',          processed:  true, expectInt: false},
+					{name: 'normal',       processed:  true, expectInt:  true},
+					{name: 'advantage',    processed:  true, expectInt:  true},
+					{name: 'disadvantage', processed:  true, expectInt:  true},
+					{name: 'always',       processed:  true, expectInt:  true},
+					{name: 'r1',           processed: false, expectInt: false},
+					{name: 'r2',           processed: false, expectInt: false},
+					{name: 'charname',     processed:  true, expectInt: false},
+				],
+			},
+			ATK:       { type: 'atk',
+				fields: [
+					{name: 'rname',        processed:  true, expectInt: false},
+					{name: 'mod',          processed:  true, expectInt: false},
+					{name: 'normal',       processed:  true, expectInt:  true},
+					{name: 'advantage',    processed:  true, expectInt:  true},
+					{name: 'disadvantage', processed:  true, expectInt:  true},
+					{name: 'always',       processed:  true, expectInt:  true},
+					{name: 'r1',           processed: false, expectInt: false},
+					{name: 'r2',           processed: false, expectInt: false},
+					{name: 'range',        processed:  true, expectInt: false},
+					{name: 'desc',         processed:  true, expectInt: false},
+					{name: 'charname',     processed:  true, expectInt: false},
+				],
+			},
+			ATKDMG:    { type: 'atkdmg',
+				fields: [
+					{name: 'rname',        processed:  true, expectInt: false},
+					{name: 'mod',          processed:  true, expectInt: false},
+					{name: 'normal',       processed:  true, expectInt:  true},
+					{name: 'advantage',    processed:  true, expectInt:  true},
+					{name: 'disadvantage', processed:  true, expectInt:  true},
+					{name: 'always',       processed:  true, expectInt:  true},
+					{name: 'attack',       processed:  true, expectInt:  true},
+					{name: 'r1',           processed: false, expectInt: false},
+					{name: 'r2',           processed: false, expectInt: false},
+					{name: 'range',        processed:  true, expectInt: false},
+					{name: 'damage',       processed:  true, expectInt:  true},
+					{name: 'dmg1flag',     processed:  true, expectInt:  true},
+					{name: 'dmg1',         processed: false, expectInt: false},
+					{name: 'dmg1type',     processed:  true, expectInt: false},
+					{name: 'crit1',        processed: false, expectInt: false},
+					{name: 'dmg2flag',     processed:  true, expectInt:  true},
+					{name: 'dmg2',         processed: false, expectInt: false},
+					{name: 'dmg2type',     processed:  true, expectInt: false},
+					{name: 'crit2',        processed: false, expectInt: false},
+					{name: 'save',         processed:  true, expectInt:  true},
+					{name: 'saveattr',     processed:  true, expectInt: false},
+					{name: 'savedesc',     processed:  true, expectInt: false},
+					{name: 'savedc',       processed:  true, expectInt:  true},
+					{name: 'spelllevel',   processed:  true, expectInt: false},
+					{name: 'hldmg',        processed: false, expectInt: false},
+					{name: 'desc',         processed:  true, expectInt: false},
+					{name: 'charname',     processed:  true, expectInt: false},
+				],
+			},
+			DMG:       { type: 'dmg',
+				fields: [
+					{name: 'rname',        processed:  true, expectInt: false},
+					{name: 'damage',       processed:  true, expectInt:  true},
+					{name: 'dmg1flag',     processed:  true, expectInt:  true},
+					{name: 'dmg1',         processed: false, expectInt: false},
+					{name: 'dmg1type',     processed:  true, expectInt: false},
+					{name: 'crit1',        processed: false, expectInt: false},
+					{name: 'dmg2flag',     processed:  true, expectInt:  true},
+					{name: 'dmg2',         processed: false, expectInt: false},
+					{name: 'dmg2type',     processed:  true, expectInt: false},
+					{name: 'crit2',        processed: false, expectInt: false},
+					{name: 'save',         processed:  true, expectInt:  true},
+					{name: 'saveattr',     processed:  true, expectInt: false},
+					{name: 'savedesc',     processed:  true, expectInt: false},
+					{name: 'savedc',       processed:  true, expectInt:  true},
+					{name: 'spelllevel',   processed:  true, expectInt: false},
+					{name: 'hldmg',        processed: false, expectInt: false},
+					{name: 'desc',         processed:  true, expectInt: false},
+					{name: 'charname',     processed:  true, expectInt: false},
+				],
+			},
+			SPELL:     { type: 'spell',
+				fields: [
+					{name: 'name',           processed:  true, expectInt: false},
+					{name: 'level',          processed:  true, expectInt: false},
+					{name: 'school',         processed:  true, expectInt: false},
+					{name: 'castingtime',    processed:  true, expectInt: false},
+					{name: 'range',          processed:  true, expectInt: false},
+					{name: 'target',         processed:  true, expectInt: false},
+					{name: 'v',              processed:  true, expectInt: false},
+					{name: 's',              processed:  true, expectInt: false},
+					{name: 'm',              processed:  true, expectInt: false},
+					{name: 'material',       processed:  true, expectInt: false},
+					{name: 'duration',       processed:  true, expectInt: false},
+					{name: 'description',    processed:  true, expectInt: false},
+					{name: 'concentration',  processed:  true, expectInt:  true},
+					{name: 'athigherlevels', processed:  true, expectInt: false},
+					{name: 'charname',       processed:  true, expectInt: false},
+				],
+			},
+			NPCACTION: { type: 'npcaction',
+				fields: [
+					{name: 'name',         processed:  true, expectInt: false},
+					{name: 'rname',        processed:  true, expectInt: false},
+					{name: 'rnamec',       processed:  true, expectInt: false},
+					{name: 'normal',       processed:  true, expectInt:  true},
+					{name: 'advantage',    processed:  true, expectInt:  true},
+					{name: 'disadvantage', processed:  true, expectInt:  true},
+					{name: 'always',       processed:  true, expectInt:  true},
+					{name: 'attack',       processed:  true, expectInt:  true},
+					{name: 'r1',           processed: false, expectInt: false},
+					{name: 'r2',           processed: false, expectInt: false},
+					{name: 'damage',       processed:  true, expectInt:  true},
+					{name: 'dmg1flag',     processed:  true, expectInt:  true},
+					{name: 'dmg1',         processed: false, expectInt: false},
+					{name: 'dmg1type',     processed:  true, expectInt: false},
+					{name: 'crit1',        processed: false, expectInt: false},
+					{name: 'dmg2flag',     processed:  true, expectInt:  true},
+					{name: 'dmg2',         processed: false, expectInt: false},
+					{name: 'dmg2type',     processed:  true, expectInt: false},
+					{name: 'crit2',        processed: false, expectInt: false},
+					{name: 'desc',         processed:  true, expectInt: false},
+					{name: 'charname',     processed:  true, expectInt: false},
+				],
+			},
+			NPCDMG:    { type: 'npcdmg',
+				fields: [
+					{name: 'damage',       processed:  true, expectInt:  true},
+					{name: 'dmg1flag',     processed:  true, expectInt:  true},
+					{name: 'dmg1',         processed: false, expectInt: false},
+					{name: 'dmg1type',     processed:  true, expectInt: false},
+					{name: 'crit1',        processed: false, expectInt: false},
+					{name: 'dmg2flag',     processed:  true, expectInt:  true},
+					{name: 'dmg2',         processed: false, expectInt: false},
+					{name: 'dmg2type',     processed:  true, expectInt: false},
+					{name: 'crit2',        processed: false, expectInt: false},
+					{name: 'charname',     processed:  true, expectInt: false},
+				],
+			},
 		};
-			
-		obj.parse = function(msg) {
-			if(msg.rolltemplate !== obj.type) { return null; }
-			obj = clearValues();
-			var processedContent = General.processInlinerolls(msg);
-			var content = msg.content;
+		
+		var parseTemplate = function(msg, template) {
+			var rt = { type: template.type, };
+			var processedContent = General.processInlinerolls(msg),
+				content = msg.content;
 			log(msg);
-			log(General.parseTemplate(content));
 			
+			// Go through any fields that require processed message content, this is anything that does not require specific roll information
 			_.each(General.parseTemplate(processedContent), function(field){
 				var v = (field[1] != null) ? field[1] : "";
-				switch (field[0]) {
-					case "rname":        obj.rname = v;                  break;
-					case "mod":          obj.mod = v;                    break;
-					case "normal":       obj.normal = parseInt(v);       break;
-					case "advantage":    obj.advantage = parseInt(v);    break;
-					case "disadvantage": obj.disadvantage = parseInt(v); break;
-					case "always":       obj.always = parseInt(v);       break;
-					case "charname":     obj.charname = v;               break;
-				}
+				// For each field, set the value if the key matches the field name, and the field is a processed field.
+				_.each(template.fields, function(FIELD) {
+					if(FIELD.processed && FIELD.name == field[0]) {
+						// If we expected a number, parse it when setting the value.
+						rt[FIELD.name] = (FIELD.expectInt) ? parseInt(v) : v; 
+					}
+				});
 			});
-			
+			// Go through any fields that require unprocessed message content, this is anything that requires specific roll information
 			_.each(General.parseTemplate(content), function(field){
 				var v = (field[1] != null) ? parseInt(field[1].replace("$[[","").replace("]]","")) : null;
-				switch (field[0]) {
-					case "r1": obj.r1 = General.getRollForIndex(msg,v); break;
-					case "r2": obj.r2 = General.getRollForIndex(msg,v); break;
-				}
+				// For each field, set the value if the key matches the field name, and the field is NOT a processed field.
+				_.each(template.fields, function(FIELD) { 
+					if(!FIELD.processed && FIELD.name == field[0]) { 
+						log(FIELD.name);
+						log(v);
+						rt[FIELD.name] = General.getRollForIndex(msg,v); 
+					}
+				});
 			});
 			
-			return obj;
-		};
-		
-		obj.formatOutput = function(ops){
-			var formatOption = function(op) {return op ? op : ""}
-			return "&{template:simple} "
-				+ "{{rname="        + formatOption(ops.rname)        + "}} "
-				+ "{{mod="          + formatOption(ops.mod)          + "}}"
-				+ "{{normal="       + formatOption(ops.normal)       + "}}"
-				+ "{{advantage="    + formatOption(ops.advantage)    + "}}"
-				+ "{{disadvantage=" + formatOption(ops.disadvantage) + "}}"
-				+ "{{always="       + formatOption(ops.always)       + "}}"
-				+ "{{r1="           + formatOption(ops.r1)           + "}}"
-				+ "{{r2="           + formatOption(ops.r2)           + "}}"
-				+ "{{charname="     + formatOption(ops.charname)     + "}}";
-		};
-		
-		return obj;
-	}()),
-	
-	RollTemplate_Description = RollTemplate_Description || (function(){
-		var obj = {};
-			obj.type = RollTemplateTypes.DESC;
-			obj.desc = null;
-			
-		
-		var clearValues = function() {
-			_.each(obj, function(value,key){
-				if(typeof obj[key] != 'function' && key !== 'type') {
-					obj[key] = null;
-				}
-			});
-			return obj;
-		};
-		
-		obj.parse = function(msg) {
-			log(msg);
-			if(msg.rolltemplate !== obj.type) { return null; }
-			obj = clearValues();
-			var processedContent = General.processInlinerolls(msg);
-			_.each(General.parseTemplate(processedContent), function(field){
-				var v = (field[1] != null) ? field[1] : "";
-				switch (field[0]) {
-					case "desc":     obj.desc = v;     break;
-				}
-			});
-			
-			return obj;
-		};
-	
-		obj.formatOutput = function(desc) {
-			return "&{template:desc} {{desc=" + desc + "}}";
-		};
-		
-		return obj;
-	}()),
-	
-	RollTemplate_Atk = RollTemplate_Atk || (function(){
-		var obj = {};
-			obj.type = RollTemplateTypes.ATK;
-			obj.rname = null;
-			obj.mod = null;
-			obj.normal = 0;
-			obj.advantage = 0;
-			obj.disadvantage = 0;
-			obj.always = 0;
-			obj.r1 = null;
-			obj.r2 = null;
-			obj.range = null;
-			obj.desc = null;
-			obj.charname = null;
-			obj.ammo = "";
-			
-		
-		var clearValues = function() {
-			_.each(obj, function(value,key){
-				if(typeof obj[key] != 'function' && key !== 'type') {
-					obj[key] = null;
-				}
-			});
-			return obj;
-		};
-		
-		obj.parse = function(msg){
-			if(msg.rolltemplate !== obj.type) { return null; }
-			obj = clearValues();
-			var processedContent = General.processInlinerolls(msg);
-			var content = msg.content;
-			_.each(General.parseTemplate(processedContent), function(field){
-				var v = (field[1] != null) ? field[1] : "";
-				switch (field[0]) {
-					case "rname":        obj.rname = v;                  break;
-					case "mod":          obj.mod = v;                    break;
-					case "normal":       obj.normal = parseInt(v);       break;
-					case "advantage":    obj.advantage = parseInt(v);    break;
-					case "disadvantage": obj.disadvantage = parseInt(v); break;
-					case "always":       obj.always = parseInt(v);       break;
-					case "range":        obj.range = v;                  break;
-					case "desc":         obj.desc = v;                   break;
-					case "charname":     obj.charname = v;               break;
-				}
-			});
-			
-			_.each(General.parseTemplate(content), function(field){
-				var v = (field[1] != null) ? parseInt(field[1].replace("$[[","").replace("]]","")) : null;
-				switch (field[0]) {
-					case "r1": obj.r1 = General.getRollForIndex(msg,v); break;
-					case "r2": obj.r2 = General.getRollForIndex(msg,v); break;
-				}
-			});
-			obj.ammo = (msg.content.split("ammo=")[1]||'').split(" {{charname=")[0];
-			
-			return obj;
-		};
-		
-		return obj;
-	}()),
-	
-	RollTemplate_Atkdmg = RollTemplate_Atkdmg || (function(){
-		var obj = {};
-			obj.type = "atkdmg";
-			obj.rname = null;
-			obj.mod = null;
-			obj.normal = 0;
-			obj.always = 0;
-			obj.advantage = 0;
-			obj.disadvantage = 0;
-			obj.r1 = null;
-			obj.r2 = null;
-			obj.attack = 0;
-			obj.damage = 0;
-			obj.dmg1flag = 0;
-			obj.dmg1 = null;
-			obj.dmg1type = null;
-			obj.crit1 = null;
-			obj.dmg2flag = 0;
-			obj.dmg2 = null;
-			obj.dmg2type = null;
-			obj.crit2 = null;
-			obj.save = 0;
-			obj.saveattr = null;
-			obj.savedesc = null;
-			obj.savedc = null;
-			obj.range = null;
-			obj.desc = null;
-			obj.charname = null;
-			obj.ammo = null;
-			obj.hldmg = null;
-			obj.spelllevel = null;
-			
-		
-		var clearValues = function() {
-			_.each(obj, function(value,key){
-				if(typeof obj[key] != 'function' && key !== 'type') {
-					obj[key] = null;
-				}
-			});
-			return obj;
-		};
-		
-		obj.parse = function(msg) {
-			if(msg.rolltemplate !== obj.type) { return null; }
-			obj = clearValues();
-			var processedContent =  General.processInlinerolls(msg);
-			var content = msg.content;
-			_.each(General.parseTemplate(processedContent), function(field){
-				var v = field[1] ? field[1] : "";
-				switch (field[0]) {
-					case "rname":        obj.rname = v;                  break;
-					case "mod":          obj.mod = v;                    break;
-					case "normal":       obj.normal = parseInt(v);       break;
-					case "advantage":    obj.advantage = parseInt(v);    break;
-					case "disadvantage": obj.disadvantage = parseInt(v); break;
-					case "always":       obj.always = parseInt(v);       break;
-					case "range":        obj.range = v;                  break;
-					case "desc":         obj.desc = v;                   break;
-					case "charname":     obj.charname = v;               break;
-					case "attack":       obj.attack = parseInt(v);       break;
-					case "damage":       obj.damage = parseInt(v);       break;
-					case "dmg1flag":     obj.dmg1flag = parseInt(v);     break;
-					case "dmg1type":     obj.dmg1type = v;               break;
-					case "dmg2flag":     obj.dmg2flag = parseInt(v);     break;
-					case "dmg2type":     obj.dmg2type = v;               break;
-					case "save":         obj.save = parseInt(v);         break;
-					case "saveattr":     obj.saveattr = v;               break;
-					case "savedesc":     obj.savedesc = v;               break;
-					case "savedc":       obj.savedc = parseInt(v);       break;
-					case "spelllevel":   obj.spelllevel = v;             break;
-				}
-			});
-			
-			_.each(General.parseTemplate(content), function(field){
-				var v = (field[1]) ? parseInt(field[1].replace("$[[","").replace("]]","")) : null;
-				switch (field[0]) {
-					case "r1":    obj.r1 = General.getRollForIndex(msg,v);    break;
-					case "r2":    obj.r2 = General.getRollForIndex(msg,v);    break;
-					case "dmg1":  obj.dmg1 = General.getRollForIndex(msg,v);  break;
-					case "dmg2":  obj.dmg2 = General.getRollForIndex(msg,v);  break;
-					case "crit1": obj.crit1 = General.getRollForIndex(msg,v); break;
-					case "crit2": obj.crit2 = General.getRollForIndex(msg,v); break;
-					case "hldmg": obj.hldmg = General.getRollForIndex(msg,v); break;
-				}
-			});
-			
-			obj.ammo = (msg.content.split("ammo=")[1]||'').split(" {{charname=")[0];
-			
-			if(obj.spelllevel && obj.hldmg) {
-				var hllevel = (obj.hldmg.inlinerolls.expression.split("*")[1]||'').split(")")[0];
-				obj.spelllevel = parseInt(obj.spelllevel) + parseInt(hllevel);
-				if(parseInt(hllevel) == 0) { obj.hldmg = null; }
+			// Special for spells and higher level damage from 'atkdmg' & 'dmg'
+			if(rt.spelllevel && rt.hldmg) {
+				var hllevel = (rt.hldmg.inlinerolls.expression.split("*")[1]||'').split(")")[0];
+				rt.spelllevel = parseInt(rt.spelllevel) + parseInt(hllevel);
+				if(parseInt(hllevel) == 0) { rt.hldmg = null; }
 			}
 			
-			return obj;
-		};
-		
-		return obj;
-	}()),
-	
-	RollTemplate_Dmg = RollTemplate_Dmg || (function(){
-		var obj = {};
-			obj.type = RollTemplateTypes.DMG;
-			obj.rname = null;
-			obj.damage = 0;
-			obj.dmg1flag = 0;
-			obj.dmg1 = null;
-			obj.dmg1type = null;
-			obj.crit1 = null;
-			obj.dmg2flag = 0;
-			obj.dmg2 = null;
-			obj.dmg2type = null;
-			obj.crit2 = null;
-			obj.save = 0;
-			obj.saveattr = null;
-			obj.savedesc = null;
-			obj.savedc = null;
-			obj.desc = null;
-			obj.charname = null;
-			obj.hldmg = null;
-			obj.spelllevel = null;
-			obj.ammo = null;
-			
-		
-		var clearValues = function() {
-			_.each(obj, function(value,key){
-				if(typeof obj[key] != 'function' && key !== 'type') {
-					obj[key] = null;
-				}
-			});
-			return obj;
-		};
-			
-		
-		obj.parse = function(msg) {
-			if(msg.rolltemplate != obj.type) { return null; }
-			obj = clearValues();
-			var processedContent =  General.processInlinerolls(msg);
-			var content = msg.content;
-			_.each(General.parseTemplate(processedContent), function(field){
-				var v = field[1] ? field[1] : "";
-				switch (field[0]) {
-					case "rname":        obj.rname = v;                  break;
-					case "desc":         obj.desc = v;                   break;
-					case "charname":     obj.charname = v;               break;
-					case "damage":       obj.damage = parseInt(v);       break;
-					case "dmg1flag":     obj.dmg1flag = parseInt(v);     break;
-					case "dmg1type":     obj.dmg1type = v;               break;
-					case "dmg2flag":     obj.dmg2flag = parseInt(v);     break;
-					case "dmg2type":     obj.dmg2type = v;               break;
-					case "save":         obj.save = parseInt(v);         break;
-					case "saveattr":     obj.saveattr = v;               break;
-					case "savedesc":     obj.savedesc = v;               break;
-					case "savedc":       obj.savedc = parseInt(v);       break;
-					case "spelllevel":   obj.spelllevel = v;             break;
-				}
-			});
-			
-			_.each(General.parseTemplate(content), function(field){
-				var v = (field[1]) ? parseInt(field[1].replace("$[[","").replace("]]","")) : null;
-				switch (field[0]) {
-					case "dmg1":  obj.dmg1 = General.getRollForIndex(msg,v);  break;
-					case "dmg2":  obj.dmg2 = General.getRollForIndex(msg,v);  break;
-					case "crit1": obj.crit1 = General.getRollForIndex(msg,v); break;
-					case "crit2": obj.crit2 = General.getRollForIndex(msg,v); break;
-					case "hldmg": obj.hldmg = General.getRollForIndex(msg,v); break;
-				}
-			});
-			
-			obj.ammo = (msg.content.split("ammo=")[1]||'').split(" {{charname=")[0];
-			
-			if(obj.spelllevel && obj.hldmg) {
-				var hllevel = (obj.hldmg.inlinerolls.expression.split("*")[1]||'').split(")")[0];
-				obj.spelllevel = parseInt(obj.spelllevel) + parseInt(hllevel);
-				if(parseInt(hllevel) == 0) { obj.hldmg = null; }
+			// Special for spell schools and level from 'spell'
+			if(rt.level) {
+				var split = rt.level.split(" ");
+				rt.school = split[0];
+				rt.level  = split[1];
 			}
 			
-			return obj;
-		};
-		
-		return obj;
-	}()),
-	
-	RollTemplate_Spell = RollTemplate_Spell || (function(){
-		var obj = {};
-			obj.type = RollTemplateTypes.SPELL;
-			obj.name = null;
-			obj.level = null;
-			obj.school = null;
-			obj.castingtime = null;
-			obj.range = null;
-			obj.target = null;
-			obj.v = null;
-			obj.s = null;
-			obj.m = null;
-			obj.material = null;
-			obj.duration = null;
-			obj.description = null;
-			obj.athigherlevels = null;
-			obj.concentration = 0;
-			obj.charname = null;
-			
-		
-		var clearValues = function() {
-			_.each(obj, function(value,key){
-				if(typeof obj[key] != 'function' && key !== 'type') {
-					obj[key] = null;
-				}
-			});
-			return obj;
+			// Return the template
+			return rt;
 		};
 		
 		obj.parse = function(msg) {
-			if(msg.rolltemplate !== obj.type) { return null; }
-			obj = clearValues();
-			var processedContent =  General.processInlinerolls(msg);
-			var content = msg.content;
-			_.each(General.parseTemplate(processedContent), function(field){
-				var v = field[1] ? field[1] : "";
-				switch (field[0]) {
-					case "name":           obj.name = v;                    break;
-					case "level":          obj.level = v;                   break;
-					case "school":         obj.school = v;                  break;
-					case "castingtime":    obj.castingtime = v;             break;
-					case "range":          obj.range = v;                   break;
-					case "target":         obj.target = v;                  break;
-					case "v":              obj.v = v;                       break;
-					case "s":              obj.s = v;                       break;
-					case "m":              obj.m = v;                       break;
-					case "material":       obj.material = v;                break;
-					case "duration":       obj.duration = v;                break;
-					case "description":    obj.description = v;             break;
-					case "athigherlevels": obj.athigherlevels = v;          break;
-					case "concentration":  obj.concentration = parseInt(v); break;
-					case "charname":       obj.charname = v;                break;
-				}
+			var rt = null;
+			_.each(obj.TEMPLATES, function(template) { if(msg.rolltemplate == template.type) { rt = parseTemplate(msg,template); } });
+			return rt;
+		};
+		
+		obj.formatOutput = function(rt) {
+			var output = "";
+			_.each(rt, function(value, key) {
+				if(typeof rt[key] != 'function' && key !== 'type') { output = output + "{{"+key+"="+value+"}} ";}
+				else if(key == 'type') { output = output + "&{template:"+value+"}"; }
 			});
-			
-			if(obj.level) {
-				var split = obj.level.split(" ");
-				obj.school = split[0];
-				obj.level  = split[1];
-			}
-			
-			return obj;
+			log(output);
+			return output;
 		};
 		
 		return obj;
 	}()),
-	
-	RollTemplate_Npcaction = RollTemplate_Npcaction || (function(){
-		var obj = {};
-			obj.type = RollTemplateTypes.NPCACTION;
-			obj.name = null;
-			obj.rname = null;
-			obj.rnamec = null;
-			obj.r1 = null;
-			obj.r2 = null;
-			obj.desc = null;
-			obj.attack = 0;
-			obj.damage = 0;
-			obj.normal = 0;
-			obj.always = 0;
-			obj.advantage = 0;
-			obj.disadvantage = 0;
-			obj.dmg1flag = 0;
-			obj.dmg2flag = 0;
-			obj.dmg1 = null;
-			obj.dmg2 = null;
-			obj.crit1 = null;
-			obj.crit2 = null;
-			obj.dmg1type = null;
-			obj.dmg2type = null;
-			obj.charname = null;
-			
-		
-		var clearValues = function() {
-			_.each(obj, function(value,key){
-				if(typeof obj[key] != 'function' && key !== 'type') {
-					obj[key] = null;
-				}
-			});
-			return obj;
-		};
-		
-		obj.parse = function(msg) {
-			if(msg.rolltemplate != obj.type) { return null; }
-			obj = clearValues();
-			var processedContent =  General.processInlinerolls(msg);
-			var content = msg.content;
-			_.each(General.parseTemplate(processedContent), function(field){
-				var v = field[1] ? field[1] : "";
-				switch (field[0]) {
-					case "name":         obj.name = v;                   break;
-					case "rname":        obj.rname = v;                  break;
-					case "rnamec":       obj.rnamec = v;                 break;
-					case "normal":       obj.normal = parseInt(v);       break;
-					case "advantage":    obj.advantage = parseInt(v);    break;
-					case "disadvantage": obj.disadvantage = parseInt(v); break;
-					case "always":       obj.always = parseInt(v);       break;
-					case "range":        obj.range = v;                  break;
-					case "desc":         obj.desc = v;                   break;
-					case "charname":     obj.charname = v;               break;
-					case "attack":       obj.attack = parseInt(v);       break;
-					case "damage":       obj.damage = parseInt(v);       break;
-					case "dmg1flag":     obj.dmg1flag = parseInt(v);     break;
-					case "dmg1type":     obj.dmg1type = v;               break;
-					case "dmg2flag":     obj.dmg2flag = parseInt(v);     break;
-					case "dmg2type":     obj.dmg2type = v;               break;
-				}
-			});
-			
-			_.each(General.parseTemplate(content), function(field){
-				var v = (field[1]) ? parseInt(field[1].replace("$[[","").replace("]]","")) : null;
-				switch (field[0]) {
-					case "r1":    obj.r1 = General.getRollForIndex(msg,v);    break;
-					case "r2":    obj.r2 = General.getRollForIndex(msg,v);    break;
-					case "dmg1":  obj.dmg1 = General.getRollForIndex(msg,v);  break;
-					case "dmg2":  obj.dmg2 = General.getRollForIndex(msg,v);  break;
-					case "crit1": obj.crit1 = General.getRollForIndex(msg,v); break;
-					case "crit2": obj.crit2 = General.getRollForIndex(msg,v); break;
-				}
-			});
-			
-			return obj;
-		};
-		
-		return obj;
-	}()),
-	
-	RollTemplate_Npcdmg = RollTemplate_Npcdmg || (function(){
-		var obj = {};
-			obj.type = RollTemplateTypes.NPCDMG;
-			obj.damage = 0;
-			obj.dmg1flag = 0;
-			obj.dmg1 = null;
-			obj.dmg1type = null;
-			obj.dmg2flag = 0;
-			obj.dmg2 = null;
-			obj.dmg2type = null;
-			
-		
-		var clearValues = function() {
-			_.each(obj, function(value,key){
-				if(typeof obj[key] != 'function' && key !== 'type') {
-					obj[key] = null;
-				}
-			});
-			return obj;
-		};
-			
-		obj.parse = function(msg) {
-			if(msg.rolltemplate !== obj.type) { return null; }
-			obj = clearValues();
-			var processedContent = General.processInlinerolls(msg);
-			var content = msg.content;
-			_.each(General.parseTemplate(processedContent), function(field){
-				var v = field[1] ? field[1] : "";
-				switch (field[0]) {
-					case "damage":       obj.damage = parseInt(v);       break;
-					case "dmg1flag":     obj.dmg1flag = parseInt(v);     break;
-					case "dmg1type":     obj.dmg1type = v;               break;
-					case "dmg2flag":     obj.dmg2flag = parseInt(v);     break;
-					case "dmg2type":     obj.dmg2type = v;               break;
-				}
-			});
-			
-			_.each(General.parseTemplate(content), function(field){
-				var v = (field[1]) ? parseInt(field[1].replace("$[[","").replace("]]","")) : null;
-				switch (field[0]) {
-					case "dmg1":  obj.dmg1 = General.getRollForIndex(msg,v);  break;
-					case "dmg2":  obj.dmg2 = General.getRollForIndex(msg,v);  break;
-					case "crit1": obj.crit1 = General.getRollForIndex(msg,v); break;
-					case "crit2": obj.crit2 = General.getRollForIndex(msg,v); break;
-				}
-			});
-			
-			return obj;
-		};		
-		
-		return obj;
-	}()),
-	
-	parseRollTemplate = function(msg) {
-		var template = null;
-		switch(msg.rolltemplate) {
-			case RollTemplateTypes.SIMPLE:    template = RollTemplate_Simple.parse(msg);      break;
-		    case RollTemplateTypes.DESC:      template = RollTemplate_Description.parse(msg); break;
-		    case RollTemplateTypes.ATK:       template = RollTemplate_Atk.parse(msg);         break;
-		    case RollTemplateTypes.ATKDMG:    template = RollTemplate_Atkdmg.parse(msg);      break;
-		    case RollTemplateTypes.DMG:       template = RollTemplate_Dmg.parse(msg);         break;
-		    case RollTemplateTypes.SPELL:     template = RollTemplate_Spell.parse(msg);       break;
-		    case RollTemplateTypes.NPCACTION: template = RollTemplate_Npcaction.parse(msg);   break;
-		    case RollTemplateTypes.NPCDMG:    template = RollTemplate_Npcdmg.parse(msg);      break;
-		}
-		return template;
-	},
-	
-	formatRollTemplateOutput = function(type, options) {
-		var output = null;
-		switch(type) {
-			case RollTemplateTypes.SIMPLE:    output = RollTemplate_Simple.formatOutput(options);      break;
-		    case RollTemplateTypes.DESC:      output = RollTemplate_Description.formatOutput(options); break;
-		    // case RollTemplateTypes.ATK:       output = RollTemplate_Atk.formatOutput(options);         break;
-		    // case RollTemplateTypes.ATKDMG:    output = RollTemplate_Atkdmg.formatOutput(options);      break;
-		    // case RollTemplateTypes.DMG:       output = RollTemplate_Dmg.formatOutput(options);         break;
-		    // case RollTemplateTypes.SPELL:     output = RollTemplate_Spell.formatOutput(options);       break;
-		    // case RollTemplateTypes.NPCACTION: output = RollTemplate_Npcaction.formatOutput(options);   break;
-		    // case RollTemplateTypes.NPCDMG:    output = RollTemplate_Npcdmg.formatOutput(options);      break;
-		}
-		return output;
-	},
 	
 	handleAmmo = function(msg) {
 		log("handleAmmo");
@@ -1378,10 +997,10 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 	},
 	
 	handleSpellSlot = function(msg) {
-		if([RollTemplateTypes.SPELL, RollTemplateTypes.ATKDMG, RollTemplateTypes.DMG].indexOf(msg.rolltemplate) === -1 && ["{{spelllevel=","{{level="].indexOf(msg.content) === -1) { return; }
+		if([RollTemplates.TEMPLATES.SPELL.type, RollTemplates.TEMPLATES.ATKDMG.type, RollTemplates.TEMPLATES.DMG.type].indexOf(msg.rolltemplate) === -1 && ["{{spelllevel=","{{level="].indexOf(msg.content) === -1) { return; }
 		log("handleSpellSlot");
 		log(msg);
-		var template = parseRollTemplate(msg);
+		var template = RollTemplates.parse(msg);
 		log(template);
 		var spelllevel = null;
 		var spellName = null;
@@ -1457,13 +1076,13 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 	},
 	
 	deathSaveEventHandler = function(msg) {
-		if(msg.rolltemplate && msg.rolltemplate === RollTemplateTypes.SIMPLE && msg.content.indexOf("^{death-save-u}") !== -1) {
+		if(msg.rolltemplate && msg.rolltemplate === RollTemplates.TEMPLATES.SIMPLE.type && msg.content.indexOf("^{death-save-u}") !== -1) {
 			// Because of the way General.parseTemplate splits based on '}}' the template for Death Saves interfere with the parsing.
 			// To resolve this issue, we replace the rname with different name and assert that our change is there after parsing.
 			msg.content = msg.content.replace("^{death-save-u}", "DEATH SAVE");
-			var simple = parseRollTemplate(msg)
+			var simple = RollTemplates.parse(msg)
 			log(simple);
-			if(simple && simple.type == RollTemplateTypes.SIMPLE && simple.rname === "DEATH SAVE" && simple.charname !== ""){
+			if(simple && simple.type == RollTemplates.TEMPLATES.SIMPLE.type && simple.rname === "DEATH SAVE" && simple.charname !== ""){
 				// Now we need to get the character for the charname output
 				var character = General.getCharacterForName(simple.charname);
 				var roll = simple.r1;
@@ -1505,7 +1124,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 					else if(!succs[1]) { s2.set({current:"on"}); resultoutput = "SUCCEEDED 2 of 3"; }
 					else               { s3.set({current:"on"}); resultoutput = "STABILIZED";       }
 				}
-				var output = formatRollTemplateOutput(RollTemplateTypes.DESC, resultoutput);
+				var output = RollTemplates.formatOutput({type: RollTemplates.TEMPLATES.DESC.type, desc:resultoutput});
 				sendChat("character|" + character.id, "@{" + simple.charname + "|wtype}" + output);
 			}
 		}
@@ -1525,7 +1144,8 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 				Resource.resetResourceWithName(charId, args[0], args[1]);
 				if(args[1] !== "max") {
 					var charname = General.getCharacter(charId).get("name");
-					var output = formatRollTemplateOutput(RollTemplateTypes.SIMPLE, {
+					var output = RollTemplates.formatOutput({
+						type: RollTemplates.TEMPLATES.SIMPLE.type,
 						rname: resName,
 						mod: resetAmount.replace("[[","").replace("]]",""),
 						normal: 1,
@@ -1736,7 +1356,8 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 				General.whisperError(scriptName, error);
 				return;
 			}
-			var output = formatRollTemplateOutput(RollTemplateTypes.SIMPLE, {
+			var output = formatRollTemplateOutput({
+				type: RollTemplates.TEMPLATES.SIMPLE.type,
 				rname: "Divine Portent " + portent,
 				r1: "[[" + res.current + "]]",
 				normal: 1,
@@ -1752,7 +1373,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 			var charId = null,
 				targetId = null,
 				value = null;
-			_.each(msg.content.split("--"), function(command){
+			_.each(General.processInlinerolls(msg).split("--"), function(command){
 				if(command.indexOf("charid") !== -1) { charId = command.replace("charid","").replace("|","").trim(); }
 				if(command.indexOf("targetid") !== -1) { targetId = command.replace("targetid","").replace("|","").trim(); }
 				else if(command.indexOf("value") !== -1) { value = command.replace("value","").replace("|","").trim(); }
@@ -1812,7 +1433,8 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 					} else if(insp_value.get("current") == "advantage") {
 						output = "/em uses inspiration to have advantage on the roll";
 					} else {
-						output = formatRollTemplateOutput(RollTemplateTypes.SIMPLE, {
+						output = RollTemplates.formatOutput({
+							type: RollTemplates.TEMPLATES.SIMPLE.type,
 							rname: "INSPIRATION",
 							normal: 1,
 							r1: "[[" + insp_value.get("current") + "]]",
@@ -1828,12 +1450,12 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 	},
 	
 	hitDiceEventHandler = function(msg) {
-		if(msg.rolltemplate && msg.rolltemplate === RollTemplateTypes.SIMPLE && msg.content.indexOf("^{hit-dice-u}") !== -1) {
+		if(msg.rolltemplate && msg.rolltemplate === RollTemplates.TEMPLATES.SIMPLE.type && msg.content.indexOf("^{hit-dice-u}") !== -1) {
 			// Because of the way General.parseTemplate splits based on '}}' the template for Hit Dice interfere with the parsing.
 			// To resolve this issue, we replace the rname with different name and assert that our change is there after parsing.
 			msg.content = msg.content.replace("^{hit-dice-u}", "HIT DICE");
-			var simple = parseRollTemplate(msg);
-			if(simple && simple.type == RollTemplateTypes.SIMPLE && simple.rname === "HIT DICE" && simple.charname !== "") {
+			var simple = RollTemplates.parse(msg);
+			if(simple && simple.type == RollTemplates.TEMPLATES.SIMPLE.type && simple.rname === "HIT DICE" && simple.charname !== "") {
 				// Now we need to get the character for the charname output
 				var character = General.getCharacterForName(simple.charname);
 				//How many hit dice was the 
@@ -1886,7 +1508,8 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 								newRolls = newRolls + "[[" + roll + "+" + con_mod + "]]+";
 							});
 							newRolls = newRolls.substr(0,newRolls.length - 1);
-							var outputSimple = formatRollTemplateOutput(RollTemplateTypes.SIMPLE, {
+							var outputSimple = RollTemplates.formatOutput({
+								type: RollTemplates.TEMPLATES.SIMPLE.type,
 								rname: "DURABLE HIT DICE",
 								normal: 1,
 								r1: "[[" + newRolls + "]]",
@@ -2367,9 +1990,9 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 	},
 	
 	healingPotionEventHandler = function(msg) {
-		if(msg.rolltemplate && msg.rolltemplate === RollTemplateTypes.SIMPLE
+		if(msg.rolltemplate && msg.rolltemplate === RollTemplates.TEMPLATES.SIMPLE.type
 			&& msg.content.indexOf("POTION OF ") !== -1 && msg.content.indexOf("HEALING")) {
-			var simple = parseRollTemplate(msg);
+			var simple = RollTemplates.parse(msg);
 			log(simple);
 			if(simple && simple.rname.indexOf("POTION OF") !== -1 && simple.rname.indexOf("HEALING") !== -1 && simple.charname !== "") {
 				var itemname = "Potion of Healing";
@@ -2393,14 +2016,14 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 				potion.set("count", parseInt(potion.count) - 1);
 				
 				var output = "[Heal " + simple.r1.total + "](!modHealth --sel --heal " + simple.r1.total + ")";
-				General.whisperGM(scriptName, formatRollTemplateOutput(RollTemplateTypes.DESC,output));
+				General.whisperGM(scriptName, RollTemplates.formatOutput({type: RollTemplates.TEMPLATES.DESC.type, desc:output}));
 			}
 		}
 	},
 	
 	damageEventHandler = function(msg) {
 		log(msg);
-		var tpl = parseRollTemplate(msg);
+		var tpl = RollTemplates.parse(msg);
 		log(tpl);
 		
 		var isMagicWeapon = function() {
@@ -2461,7 +2084,7 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 		var output = "";
 		_.each(btns, function(btn) { output = output + btn; });
 		
-		if(output != "") { General.whisperGM(scriptName, formatRollTemplateOutput(RollTemplateTypes.DESC, output)); }
+		if(output != "") { General.whisperGM(scriptName, RollTemplates.formatOutput({type: RollTemplates.TEMPLATES.DESC.type, desc:output})); }
 	},
 	
 	handleInput = function(msg) {
@@ -2484,11 +2107,12 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 		 */
 		else {
 			if(msg.content.indexOf("ammo=") !== -1) { handleAmmo(msg); }
-			if([RollTemplateTypes.SPELL, RollTemplateTypes.ATKDMG, RollTemplateTypes.DMG].indexOf(msg.rolltemplate) !== -1) { handleSpellSlot(msg); }
-			if([RollTemplateTypes.ATKDMG,RollTemplateTypes.DMG, RollTemplateTypes.NPCACTION, RollTemplateTypes.NPCDMG].indexOf(msg.rolltemplate) !== -1) { damageEventHandler(msg); }
-			if(msg.rolltemplate === RollTemplateTypes.SIMPLE && msg.content.indexOf("^{death-save-u}") !== -1) { deathSaveEventHandler(msg); }
-			if(msg.rolltemplate === RollTemplateTypes.SIMPLE && msg.content.indexOf("^{hit-dice-u}") !== -1) { hitDiceEventHandler(msg); }
-			if(msg.rolltemplate === RollTemplateTypes.SIMPLE && msg.content.indexOf("POTION OF ") !== -1 && msg.content.indexOf("HEALING") !== -1) { healingPotionEventHandler(msg); }
+			if([RollTemplates.TEMPLATES.SPELL.type, RollTemplates.TEMPLATES.ATKDMG.type, RollTemplates.TEMPLATES.DMG.type].indexOf(msg.rolltemplate) !== -1) { handleSpellSlot(msg); }
+			if([RollTemplates.TEMPLATES.ATKDMG.type,RollTemplates.TEMPLATES.DMG.type, RollTemplates.TEMPLATES.NPCACTION.type, RollTemplates.TEMPLATES.NPCDMG.type].indexOf(msg.rolltemplate) !== -1) { damageEventHandler(msg); }
+			if(msg.rolltemplate === RollTemplates.TEMPLATES.SIMPLE.type && msg.content.indexOf("^{death-save-u}") !== -1) { deathSaveEventHandler(msg); }
+			if(msg.rolltemplate === RollTemplates.TEMPLATES.SIMPLE.type && msg.content.indexOf("^{hit-dice-u}") !== -1) { hitDiceEventHandler(msg); }
+			if(msg.rolltemplate === RollTemplates.TEMPLATES.SIMPLE.type && msg.content.indexOf("POTION OF ") !== -1 && msg.content.indexOf("HEALING") !== -1) { healingPotionEventHandler(msg); }
+			
 		}
 	},
 	
@@ -2522,10 +2146,10 @@ var Kyle5eOglCompanion = Kyle5eOglCompanion || (function(){
 		CheckInstall: checkInstall,
 		RegisterEventHandlers: registerEventHandlers,
 		IsNPC: isNPC,
-		ParseRollTemplate: parseRollTemplate,
+		ParseRollTemplate: RollTemplates.parse,
 		GetResourceWithName: Resource.getForName,
 		GetItemWithName: Item.getForName,
-		Format5eOglRollTemplate: formatRollTemplateOutput,
+		FormatOutput: RollTemplates.formatOutput,
 		ClearDeathSavesForCharacter:clearDeathSavesForCharacter,
 	};
 }());
