@@ -1,5 +1,9 @@
 //======================================================================================================================
-// github
+//
+// Github:   https://github.com/oukag/roll20-api-script/blob/master/Moonrock/Moonrock.js
+// By:       Kyle G.
+// Contact:  https://app.roll20.net/users/1419660/kyle-g
+//
 // Moonrock script
 // Commands
 // !advanceDay <num>    - Advances the lunar calendar by <num> days and displays the result. Defaults to 1 if no num is provided.
