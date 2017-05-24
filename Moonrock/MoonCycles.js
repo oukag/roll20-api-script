@@ -12,6 +12,7 @@ var Moonrock = Moonrock || (function(){
         'use strict';
 
         var scriptName = 'Moon Cycles',
+            version = '0.1.0',
 
             moon_cycle_imgsrc = "http://donjon.bin.sh/fantasy/calendar/ma_moonsprite32_32c1r.png",
 
