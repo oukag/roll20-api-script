@@ -51,7 +51,7 @@ var Moonrock = Moonrock || (function(){
             ],
 			OPAL       = Moons[0],
 			WHITE_LADY = Moons[1],
-            DARKNESS   = Moons[2],
+			DARKNESS   = Moons[2],
 			RED_TEAR   = Moons[3],
 			AETHER     = Moons[4],
 
