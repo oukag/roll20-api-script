@@ -4,7 +4,7 @@
 var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
         'use strict';
 
-        var version = '0.1.0',
+        var version = '0.1.1',
             scriptName = '5e OGL Companion by Kyle G.',
 
             StatusMarkers = {
@@ -117,7 +117,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                             result = true;
                             // Check to see if the result might change due to magical, silvered, or adamantine weapons.
                             _.each(attr.get('current').toLowerCase().split(";"), function(value) {
-                                if(value.indexOf(keyword.toLowerCase().trim()) == -1) { return; }
+                                if(value.indexOf(keyword.toLowerCase().trim()) === -1) { return; }
                                 if(    (value.indexOf('adamantine') !== -1 && adamantine)
                                     || (value.indexOf('silver')     !== -1 && silvered)
                                     || (value.indexOf('nonmagic')   !== -1 && magical) ) {
@@ -202,8 +202,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
 					 */
                     getAttrNotNull = function(n, v) {
                         var attr = General.findAttr(obj.characterid, n);
-                        if(v == null) { v = 'current'; }
-                        return (attr != null) ? attr.get(v) : '';
+                        return (attr) ? attr.get((v ? v : 'current')) : '';
                     },
 
                     update = function(res,charId) {
@@ -245,9 +244,9 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                     var resource = Resource.getForName(resName.trim(), charId);
                     var error = null;
                     if(resource) {
-                        if(amount === 'max' && resource.max == '') {
+                        if(amount === 'max' && resource.max === '') {
                             error = "Tried to set resource '" + resName + "' to max, but no max is set for the resource";
-                        } else if(resource.max == "") {
+                        } else if(resource.max === '') {
                             // Overwrite the current amount of the resource with the amount, regardless of its current value
                             resource.set('current', amount);
                         } else if(resource.max) {
@@ -335,8 +334,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
 					 */
                     getAttrNotNull = function(n, v) {
                         var attr = General.findAttr(obj.characterid, n);
-                        if(v == null) { v = 'current'; }
-                        return (attr != null) ? attr.get(v) : "";
+                        return (attr) ? attr.get((v ? v : 'current')) : '';
                     };
 
                 obj.set = function(n,v) {
@@ -481,13 +479,12 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
 					 */
                     getAttrNotNull = function(n, v) {
                         var attr = General.findAttr(obj.characterid, n);
-                        if(v == null) { v = 'current'; }
-                        return (attr != null) ? attr.get(v) : "";
+                        return (attr) ? attr.get((v ? v : 'current')) : '';
                     },
 
 
                     update = function(spelllevel,rowId, charId) {
-                        var prefix = PREFIX.REPEATING_SPELL + ((spelllevel == "0") ? "cantrip" : spelllevel);
+                        var prefix = PREFIX.REPEATING_SPELL + ((spelllevel === '0') ? "cantrip" : spelllevel);
 
                         obj.characterid = charId;
                         obj.rowId = rowId;
@@ -565,7 +562,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                 obj.getForSpelllevelAndRowId = function(spelllevel, rowId, charId){
                     log("Spell.getForSpelllevelAndRowId(" + spelllevel + "," + rowId + "," + charId + ")");
                     var error = null;
-                    var prefix = PREFIX.REPEATING_SPELL + ((spelllevel == "0") ? "cantrip" : spelllevel);
+                    var prefix = PREFIX.REPEATING_SPELL + ((spelllevel === '0') ? 'cantrip' : spelllevel);
                     // See if the spell for the given row id and spell level exists
                     var spellname_baseAttr = General.findAttr(charId, prefix + SUFFIX.NAME_BASE);
                     if(!spellname_baseAttr) {
@@ -621,7 +618,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                  */
                 obj.whisperGM = function(sender, message, callback, options) { obj.sendChat(sender, "/w gm " + message, callback, options); };
                 /**
-                 * Allows a message to be sent to the gm that will be used to inform them that an error occured
+                 * Allows a message to be sent to the gm that will be used to inform them that an error occurred
                  */
                 obj.whisperError = function(sender, message, callback, options) { obj.whisperGM(sender, "<b style='color:red'>ERROR</b> -> " + message, callback, options); };
                 obj.getSenderForName = function(name) {
@@ -707,9 +704,31 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                     var iRolls = msg.inlinerolls[index];
                     return {
                         inlineIndex: index,
-                        inlinerolls: (iRolls != null) ? iRolls : null,
-                        total: (iRolls && iRolls.results && iRolls.results.rolls && iRolls.results.rolls[0] && iRolls.results.rolls[0].dice != 0) ? parseInt(iRolls.results.total) : 0
+                        inlinerolls: (iRolls) ? iRolls : null,
+                        total: (iRolls && iRolls.results && iRolls.results.rolls && iRolls.results.rolls[0] && iRolls.results.rolls[0].dice !== 0) ? parseInt(iRolls.results.total) : 0
                     };
+                };
+
+                obj.isApiCall = function(msg) { return msg.type === 'api'; };
+
+                obj.loadState = function() {
+                    if(!state.FifthEditionOGLbyKyleG) {
+                        state.FifthEditionOGLbyKyleG ={};
+                    }
+                    _.each(EVENT_HANDLERS, function(event){
+                        if(!General.getState(event)) {
+                            General.setState(event, 'on');
+                        }
+                    });
+                };
+
+                obj.isStateOff = function(event_handler) { return obj.getState(event_handler) === 'off'; };
+                obj.isStateQuiet = function(event_handler) { return obj.getState(event_handler) === 'quiet'; };
+                obj.getState = function(event_handler) { return (event_handler && event_handler.name) ? state.FifthEditionOGLbyKyleG[event_handler.name].toLowerCase() : null; };
+                obj.setState = function(event_handler, value){
+                    if(event_handler && event_handler.name) {
+                        state.FifthEditionOGLbyKyleG[event_handler.name] = value;
+                    }
                 };
 
                 return obj;
@@ -718,6 +737,20 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
             RollTemplates = (function(){
                 var obj = {};
 
+                /**
+                 * Each roll template for the 5e OGL character sheet is expressed here by:
+                 *   type - the string value representing the roll template, same value as used in the chat window of
+                 *          Roll 20 &{template:type}.
+                 *   fields - the list of possible fields in the roll template.
+                 *
+                 * Because of the various types of fields (flat value, rolls, flags), each field has its own properties:
+                 *   name - the string value representing the field, same value as used in the chat window of Roll20
+                 *          {{name=value}}
+                 *   processed - when false, this tells the parser that the field is supposed to contain roll information
+                 *               when true, the parser takes the final result from the field after any inline rolls are calculated.
+                 *   expectInt - this tells the parser that the final result should be a number. This is typically used
+                 *               for flag fields but can also be used for flat values (such as saving throw DCs)
+                 */
                 obj.TEMPLATES = {
                     DESC:      { type: 'desc', fields: [{name:'desc', processed: true, expectInt: false}] },
                     SIMPLE:    { type: 'simple',
@@ -861,6 +894,17 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                     }
                 };
 
+                /**
+                 * Parse the roll template passed from the Chat window into the individual parts specified by the given
+                 * template.
+                 *
+                 * Any rolls in the template are parsed as an object with the individual dice values in addition to the
+                 * total result. Flat values and flags are processed to store only the final result after calculations.
+                 *
+                 * @param msg - Message from the chat window.
+                 * @param template - Specific template object from RollTemplates.TEMPLATES
+                 * @returns {{type}} - Contains all the fields in the template that are also present in the msg.
+                 */
                 var parseTemplate = function(msg, template) {
                     var rt = { type: template.type };
                     var processedContent = General.processInlinerolls(msg),
@@ -869,36 +913,35 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
 
                     // Go through any fields that require processed message content, this is anything that does not require specific roll information
                     _.each(General.parseTemplate(processedContent), function(field){
-                        var v = (field[1] != null) ? field[1] : "";
+                        var v = (field[1]) ? field[1] : "";
                         // For each field, set the value if the key matches the field name, and the field is a processed field.
                         _.each(template.fields, function(FIELD) {
-                            if(FIELD.processed && FIELD.name == field[0]) {
+                            if(FIELD.processed && FIELD.name === field[0]) {
                                 // If we expected a number, parse it when setting the value.
                                 rt[FIELD.name] = (FIELD.expectInt) ? parseInt(v) : v;
                             }
                         });
                     });
+
                     // Go through any fields that require unprocessed message content, this is anything that requires specific roll information
                     _.each(General.parseTemplate(content), function(field){
-                        var v = (field[1] != null) ? parseInt(field[1].replace("$[[","").replace("]]","")) : null;
+                        var v = (field[1]) ? parseInt(field[1].replace("$[[","").replace("]]","")) : null;
                         // For each field, set the value if the key matches the field name, and the field is NOT a processed field.
                         _.each(template.fields, function(FIELD) {
-                            if(!FIELD.processed && FIELD.name == field[0]) {
-                                log(FIELD.name);
-                                log(v);
+                            if(!FIELD.processed && FIELD.name === field[0]) {
                                 rt[FIELD.name] = General.getRollForIndex(msg,v);
                             }
                         });
                     });
 
-                    // Special for spells and higher level damage from 'atkdmg' & 'dmg'
+                    // Special for spells and higher level damage from template 'atkdmg' or template 'dmg'
                     if(rt.spelllevel && rt.hldmg) {
                         var hllevel = (rt.hldmg.inlinerolls.expression.split("*")[1]||'').split(")")[0];
                         rt.spelllevel = parseInt(rt.spelllevel) + parseInt(hllevel);
-                        if(parseInt(hllevel) == 0) { rt.hldmg = null; }
+                        if(parseInt(hllevel) === 0) { rt.hldmg = null; }
                     }
 
-                    // Special for spell schools and level from 'spell'
+                    // Special for spell schools and level from template 'spell'
                     if(rt.level) {
                         var split = rt.level.split(" ");
                         rt.school = split[0];
@@ -909,17 +952,26 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                     return rt;
                 };
 
+                /**
+                 * Parses the message for the roll template fields based on the roll template of the message.
+                 * @param msg - Message from the chat window (must have .rolltemplate to be valid)
+                 * @returns {{type}} - Contains all the fields in the roll template that are also present in the msg.
+                 */
                 obj.parse = function(msg) {
                     var rt = null;
-                    _.each(obj.TEMPLATES, function(template) { if(msg.rolltemplate == template.type) { rt = parseTemplate(msg,template); } });
+                    _.each(obj.TEMPLATES, function(template) { if(msg.rolltemplate === template.type) { rt = parseTemplate(msg,template); } });
                     return rt;
                 };
 
+                /**
+                 * Formats a roll template object into its string equivalent for printing roll templates to the chat window.
+                 * @param rt - object containing the type and fields for the roll template
+                 */
                 obj.formatOutput = function(rt) {
                     var output = "";
                     _.each(rt, function(value, key) {
-                        if(typeof rt[key] != 'function' && key !== 'type') { output = output + "{{"+key+"="+value+"}} ";}
-                        else if(key == 'type') { output = output + "&{template:"+value+"}"; }
+                        if(typeof rt[key] !== 'function' && key !== 'type') { output = output + "{{"+key+"="+value+"}} ";}
+                        else if(key === 'type') { output = output + "&{template:"+value+"}"; }
                     });
                     log(output);
                     return output;
@@ -931,7 +983,8 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
             isNPC = function(character) {
                 var charId = (character && character.id) ? character.id : character;
                 var attr = General.findOrCreateAttr(charId, SpecificAttributes.NPC);
-                return (attr && attr.get('current') == 1);
+                log(attr);
+                return (attr && attr.get('current') === '1');
             },
 
             handleAmmo = function(msg) {
@@ -960,10 +1013,14 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                 var charnameRegex = /(charname=(.*?)}})/g;
                 var nameRegex = /(name=(.*?)}})/g;
                 var charname = (contents.indexOf("charname=") !== -1 ? contents.match(charnameRegex)[0] : (contents.indexOf("name=") !== -1 ? contents.match(nameRegex)[0] : null));
+                if(!charname) {
+                    General.whisperError(scriptName,"No character name found when trying to access ammo '" + ammofull + "'");
+                    return;
+                }
                 charname = charname.replace("{{","").replace("charname=","").replace("name=","").replace("}}","");
                 log("Charname: '" + charname + "'");
                 var character = General.getCharacterForName(charname);
-                if(ammofull == "" || !character || isNPC(character.id)) { return; }
+                if(ammofull === '' || !character || isNPC(character.id)) { return; }
 
                 var ammoresource = null;
                 if(ammofull.substring(0,1) === "-") {
@@ -994,7 +1051,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                         desc:ammoresource.name + ":\n" + ((ammoresource.current >= 0) ? ammoresource.current  + " LEFT" : "OUT OF " + (ammoitem ? "AMMO" : "USES"))
                     });
 
-                    if(state.FifthEditionOGLbyKyleG[EVENT_HANDLERS.AmmoTracking.name] != 'quiet') {
+                    if(!General.isStateQuiet(EVENT_HANDLERS.AmmoTracking)) {
                         sendChat(General.getSenderForName(msg.who),output)
                     }
                 }
@@ -1006,6 +1063,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                 log(msg);
                 var template = RollTemplates.parse(msg);
                 log(template);
+                if(!template.charname) { return; }
                 var spelllevel = null;
                 var spellName = null;
                 if(template.type === 'spell') {
@@ -1046,7 +1104,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                 log(spent <= parseInt(spellslotMax.get('current')));
                 spellslotCurrent.set('current', spent);
 
-                if(state.FifthEditionOGLbyKyleG[EVENT_HANDLERS.SpellTracking.name] != 'quiet') {
+                if(!General.isStateQuiet(EVENT_HANDLERS.SpellTracking)) {
                     var output = "SPELL SLOT LEVEL " + spelllevel + "\n<span style='color: red'>" +
                         spent + " OF " + spellslotMax.get('current') + "</span> REMAINING";
                     sendChat(General.getSenderForName(msg.who), RollTemplates.formatOutput({
@@ -1092,12 +1150,12 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                     msg.content = msg.content.replace("^{death-save-u}", "DEATH SAVE");
                     var simple = RollTemplates.parse(msg);
                     log(simple);
-                    if(simple && simple.type == RollTemplates.TEMPLATES.SIMPLE.type && simple.rname === "DEATH SAVE" && simple.charname !== ""){
+                    if(simple && simple.type === RollTemplates.TEMPLATES.SIMPLE.type && simple.rname === "DEATH SAVE" && simple.charname !== ""){
                         // Now we need to get the character for the charname output
                         var character = General.getCharacterForName(simple.charname);
                         var roll = simple.r1;
-                        if(simple.r2 && simple.advantage == 1 && simple.r2.total > roll.total
-                            || simple.r2 && simple.disadvantage == 1 && simple.r2.total < roll.total) {
+                        if(simple.r2 && simple.advantage === 1 && simple.r2.total > roll.total
+                            || simple.r2 && simple.disadvantage === 1 && simple.r2.total < roll.total) {
                             roll = simple.r2;
                         }
                         var result = roll.total;
@@ -1135,7 +1193,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                             else               { s3.set({current:"on"}); resultoutput = "STABILIZED";       }
                         }
 
-                        if(state.FifthEditionOGLbyKyleG[EVENT_HANDLERS.DeathSaveTracking.name] != 'quiet') {
+                        if(!General.isStateQuiet(EVENT_HANDLERS.DeathSaveTracking)) {
                             var output = RollTemplates.formatOutput({
                                 type: RollTemplates.TEMPLATES.DESC.type,
                                 desc: resultoutput
@@ -1192,7 +1250,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
             },
 
             handleLongRest = function(msg) {
-                if(msg.type == "api" && msg.content.indexOf("!longrest") !== -1) {
+                if(COMMANDS.LongRest.trigger(msg)) {
                     if(msg.content.indexOf("--help") !== -1) {
                         General.sendChat(scriptName, "/w \"" + msg.who.replace(' (GM)','') + "\" " + COMMANDS.LongRest.help);
                         return;
@@ -1224,7 +1282,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                         var hp = General.findAttr(charId, SpecificAttributes.HP);
                         if(hp) { healCharacter(charId, hp.get("max")); }
 
-                        if(parseInt(hp.get('current')) != parseInt(hp.get("max"))) {
+                        if(parseInt(hp.get('current')) !== parseInt(hp.get("max"))) {
                             error =  error + "<p>The hit points for character <b>'" + General.getCharacter(charId).get('name')
                                 + "'</b> did not update properly. Please delete and reset attribute with name <b>'"
                                 + SpecificAttributes.HP + "'</b> and run <b>!updateDefaultToken</b> for the character.</p>"
@@ -1268,12 +1326,12 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                         // Remove inspiration if it's not from the GM
                         var inspiration = General.findAttr(charId,SpecificAttributes.INSPIRATION);
                         var inspiration_value = General.findAttr(charId,SpecificAttributes.INSPIRATION_VALUE);
-                        if(inspiration && inspiration_value && inspiration_value.get('current') != "advantage") {
+                        if(inspiration && inspiration_value && inspiration_value.get('current') !== "advantage") {
                             inspiration.set({current:""});
                             inspiration_value.set({current:""});
                         }
                     });
-                    if(error != "") {
+                    if(error !== '') {
                         log(error);
                         General.whisperError(scriptName, error);
                     }
@@ -1281,7 +1339,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
             },
 
             handleUpdateDefaultToken = function(msg) {
-                if(msg.type == "api" && msg.content.indexOf("!updateDefaultToken") !== -1) {
+                if(COMMANDS.UpdateDefaultToken.trigger(msg)) {
                     if(msg.content.indexOf("--help") !== -1) {
                         General.sendChat(scriptName, "/w \"" + msg.who.replace(' (GM)','') + "\" " + COMMANDS.UpdateDefaultToken.help);
                         return;
@@ -1293,11 +1351,13 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                         log(defaulttoken);
                         var mods = {};
                         if(isNPC(character.id)) {
+                            log("UpdateDefaultToken - NPC");
                             // NPC bar values (not linked because they are mooks) 1: AVG_HP, 2: NPC_AC, 3: NPC_SPEED
                             mods[TokenSpecifics.HP_BAR+"_value"] = getAttrByName(character.id, SpecificAttributes.NPC_HP);
                             mods[TokenSpecifics.AC_BAR+"_value"] = getAttrByName(character.id, SpecificAttributes.NPC_AC);
                             mods[TokenSpecifics.NPC_SPEED_BAR+"_value"] = getAttrByName(character.id, SpecificAttributes.NPC_SPEED);
                         } else {
+                            log("UpdateDefaultToken - PC");
                             // PC bar links 1: HP, 2: AC, 3: HP_TEMP
                             var hp = General.findOrCreateAttr(character.id, SpecificAttributes.HP),
                                 ac = General.findOrCreateAttr(character.id, SpecificAttributes.AC),
@@ -1322,7 +1382,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
             },
 
             handleShortRest = function(msg) {
-                if(msg.type == "api" && msg.content.indexOf("!shortrest") !== -1) {
+                if(COMMANDS.ShortRest.trigger(msg)) {
                     if(msg.content.indexOf("--help") !== -1) {
                         General.sendChat(scriptName, "/w \"" + msg.who.replace(' (GM)','') + "\" " + COMMANDS.ShortRest.help);
                         return;
@@ -1360,7 +1420,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
              * !divinePortent --charid <character_id> --portent <1|2>
              */
             handleDivinePortent = function(msg) {
-                if(msg.type == "api" && msg.content.indexOf("!divinePortent") !== -1) {
+                if(COMMANDS.DivinePortent.trigger(msg)) {
                     if(msg.content.indexOf("--help") !== -1) {
                         General.sendChat(scriptName, "/w \"" + msg.who.replace(' (GM)','') + "\" " + COMMANDS.DivinePortent.help);
                         return;
@@ -1399,7 +1459,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
             },
 
             handleInspire = function(msg) {
-                if(msg.type == "api" && msg.content.indexOf("!inspire") !== -1) {
+                if(COMMANDS.Inspire.trigger(msg)) {
                     if(msg.content.indexOf("--help") !== -1) {
                         General.sendChat(scriptName, "/w \"" + msg.who.replace(' (GM)','') + "\" " + COMMANDS.Inspire.help);
                         return;
@@ -1423,12 +1483,12 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
             inspireCharacter = function(targetId, value, charId) {
                 if(isNPC(targetId)) { General.sendChat(scriptName, "You can't inspire NPCs"); return; }
                 var targetname =  General.getCharacter(targetId).get('name');
-                var who = (charId == "gm") ? charId : General.getCharacter(charId).get('name');
+                var who = (charId === "gm") ? charId : General.getCharacter(charId).get('name');
                 var inspiration =  General.findOrCreateAttr(targetId, SpecificAttributes.INSPIRATION);
                 log(inspiration);
                 if(inspiration.get('current') !== "on") {
                     var insp_value = General.findOrCreateAttr(targetId, SpecificAttributes.INSPIRATION_VALUE);
-                    if(who != "gm") {
+                    if(who !== "gm") {
                         // Decrease the character's Bardic Inspiration resource
                         var bardicInspiration = Resource.getForName("Bardic Inspiration", charId);
                         if(!bardicInspiration || parseInt(bardicInspiration.current) <= 0) {
@@ -1444,14 +1504,14 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                     General.sendChat("character|"+targetId,"/em is feeling inspired by " + who);
                 } else {
                     General.sendChat(scriptName, "/w \"" + who + "\" " + targetname + " is already inspired.");
-                    if(who != "gm") {
+                    if(who !== "gm") {
                         General.whisperGM(scriptName, who + " tried to inspire " + targetname + " but was already inspired.");
                     }
                 }
             },
 
             handleUseInspiration = function(msg) {
-                if(msg.type == "api" && msg.content.indexOf("!useInspiration") !== -1) {
+                if(COMMANDS.UseInspiration.trigger(msg)) {
                     if(msg.content.indexOf("--help") !== -1) {
                         General.sendChat(scriptName, "/w \"" + msg.who.replace(' (GM)','') + "\" " + COMMANDS.UseInspiration.help);
                         return;
@@ -1462,10 +1522,10 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                             var inspiration = General.findOrCreateAttr(character.id, SpecificAttributes.INSPIRATION);
                             var insp_value = General.findOrCreateAttr(character.id, SpecificAttributes.INSPIRATION_VALUE);
                             var output;
-                            if(inspiration.get('current') == "" || inspiration.get('current') !== "on" || insp_value.get('current') == "") {
+                            if(inspiration.get('current') === "" || inspiration.get('current') !== "on" || insp_value.get('current') === "") {
                                 General.sendChat(scriptName,"/w " + msg.who.split(" ")[0] + " " + character.get('name') + " does not have inspiration.");
                                 return;
-                            } else if(insp_value.get('current') == "advantage") {
+                            } else if(insp_value.get('current') === "advantage") {
                                 output = "/em uses inspiration to have advantage on the roll";
                             } else {
                                 output = RollTemplates.formatOutput({
@@ -1490,7 +1550,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                     // To resolve this issue, we replace the rname with different name and assert that our change is there after parsing.
                     msg.content = msg.content.replace("^{hit-dice-u}", "HIT DICE");
                     var simple = RollTemplates.parse(msg);
-                    if(simple && simple.type == RollTemplates.TEMPLATES.SIMPLE.type && simple.rname === "HIT DICE" && simple.charname !== "") {
+                    if(simple && simple.type === RollTemplates.TEMPLATES.SIMPLE.type && simple.rname === "HIT DICE" && simple.charname !== "") {
                         // Now we need to get the character for the charname output
                         var character = General.getCharacterForName(simple.charname);
                         //How many hit dice was the
@@ -1724,7 +1784,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
              * This method requires that tokens submitted have value stored in hp_max.
              */
             updateHealthStatus = function(token) {
-                if(state.FifthEditionOGLbyKyleG[EVENT_HANDLERS.StatusListener.name] == 'off') { return; }
+                if(General.isStateOff(EVENT_HANDLERS.StatusListener)) { return; }
                 var hp_curr = TokenSpecifics.HP_BAR + "_value",
                     hp_max = TokenSpecifics.HP_BAR + "_max";
 
@@ -1785,7 +1845,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
              *	charids		- the character ids for the options to be applied when the charids option was found.
              */
             getModHealthCommands = function(msg) {
-                if(msg.content.indexOf("!modHealth") == -1 || msg.content.indexOf("--help") !== -1) { return null; }
+                if(msg.content.indexOf("!modHealth") === -1 || msg.content.indexOf("--help") !== -1) { return null; }
 
                 var options = {};
                 options.damage = {};
@@ -1803,25 +1863,25 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                         // Get the provided character IDs
                         var splitIds = op.split("|");
                         options.charids = splitIds.slice(1,splitIds.length);
-                        if(options.charids.length == 0) { error = error + "No character ids were provided with --charids|id1|id2... "; }
+                        if(options.charids.length === 0) { error = error + "No character ids were provided with --charids|id1|id2... "; }
                     }
                     else if(op.indexOf("damage") !== -1) {
                         // Get the damage amount and type
                         var split = op.split("|");
                         options.damage.amount = parseInt(split[1]||0)||0;
                         options.damage.type = split[2].trim();
-                        if(options.damage.amount == 0) { error = error + "Damage amount was 0. "; }
-                        if(!options.damage.type || options.damage.type == "") { error = error + "Invalid damage type '" + options.damage.type + "'. "; }
+                        if(options.damage.amount === 0) { error = error + "Damage amount was 0. "; }
+                        if(!options.damage.type || options.damage.type === "") { error = error + "Invalid damage type '" + options.damage.type + "'. "; }
                     }
                     else if(op.indexOf("heal") !== -1) {
                         // Get the healing amount
                         options.heal = parseInt(op.split("|")[1]||0)||0;
-                        if(options.heal == 0) { error = error + "Heal amount was 0. "; }
+                        if(options.heal === 0) { error = error + "Heal amount was 0. "; }
                     }
                     else if(op.indexOf("temphp") !== -1) {
                         // Get the temp hp amount
                         options.temphp = parseInt(op.split("|")[1]||0)||0;
-                        if(options.temphp == 0) { error = error + "Temphp amount was 0. "; }
+                        if(options.temphp === 0) { error = error + "Temphp amount was 0. "; }
                     }
                     // Check to see if the user specified any additional damage modifiers
                     else if(op.indexOf("magical") !== -1) { options.damage.magical = true; }
@@ -1855,7 +1915,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
              * If there was a problem with the command, outputs the help message to the screen
              */
             handleModHealth = function(msg) {
-                if(msg.type == "api" && msg.content.indexOf("!modHealth") !== -1) {
+                if(COMMANDS.ModHealth.trigger(msg)) {
                     var commands = getModHealthCommands(msg);
                     log(commands);
                     if(commands) {
@@ -1871,7 +1931,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
              */
             clearDeathSavingThrows = function(obj, prev) {
                 // Clear the death saving throws from the character if they just came back from 0 hp.
-                if(obj.get('name') == SpecificAttributes.HP && prev.current <= 0 && obj.get('current') > 0) {
+                if(obj.get('name') === SpecificAttributes.HP && prev.current <= 0 && obj.get('current') > 0) {
                     clearDeathSavesForCharacter(obj.get("characterid"));
                     General.whisperGM(scriptName, "Clearing death saving throws for " + General.getCharacter(obj.get("characterid")).get('name'));
                 }
@@ -1882,7 +1942,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
              */
             isCharacterRaging = function(charId) {
                 var attr = General.findAttr(charId, SpecificAttributes.IS_RAGING);
-                if(attr) { return attr.get('current') == "1"; }
+                if(attr) { return attr.get('current') === "1"; }
                 return false;
             },
 
@@ -1939,7 +1999,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
              * If no tokens are selected, this method looks for a character ID to have been included in the command.
              */
             handleToggleRage = function(msg) {
-                if(msg.type == "api" && msg.content.indexOf("!toggleRage") !== -1) {
+                if(COMMANDS.ToggleRage.trigger(msg)) {
                     if(msg.content.indexOf("--help") !== -1) {
                         General.sendChat(scriptName, "/w \"" + msg.who.replace(' (GM)','') + "\" " + COMMANDS.ToggleRage.help);
                         return;
@@ -1964,7 +2024,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
             toggleTokenConcentration = function(token) { token.set(StatusMarkers.CONCENTRATION, !isTokenConcentrating(token)); },
 
             handleToggleConcentration = function(msg) {
-                if(msg.type == "api" && msg.content.indexOf("!toggleConcentration") !== -1) {
+                if(COMMANDS.ToggleConcentration.trigger(msg)) {
                     if(msg.content.indexOf("--help") !== -1) {
                         General.sendChat(scriptName, "/w \"" + msg.who.replace(' (GM)','') + "\" " + COMMANDS.ToggleConcentration.help);
                         return;
@@ -2049,6 +2109,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
 
             damageEventHandler = function(msg) {
                 if(EVENT_HANDLERS.DamageListener.trigger(msg)) {
+                    log("damageEventHandler");
                     log(msg);
                     var tpl = RollTemplates.parse(msg);
                     log(tpl);
@@ -2057,7 +2118,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                         // Is it a spell?
                         if (tpl.spelllevel) { return true; }
                         // Does the name of the weapon contain magic
-                        if (tpl.rname.toLowerCase().indexOf("magic") !== -1) { return true; }
+                        if (tpl.rname && tpl.rname.toLowerCase().indexOf("magic") !== -1) { return true; }
                         // Is one of the damage types magical
                         if ((tpl.dmg1flag && DamageTypes.isMagicalDamage(tpl.dmg1type)) || (tpl.dmg2flag && DamageTypes.isMagicalDamage(tpl.dmg2type))) {
                             return true;
@@ -2076,13 +2137,13 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                         if (hasMagicLabel(tpl.dmg1) || hasMagicLabel(tpl.dmg2)) { return true; }
                         // Does the item for the weapon have a property that says it is magical
                         var item = Item.getForName(tpl.rname, General.getCharacterForName(tpl.charname));
-                        if (item && item.properties.toLowerCase().indexOf("magic") !== -1) { return true; }
+                        if (item && item.properties && item.properties.toLowerCase().indexOf("magic") !== -1) { return true; }
                     };
 
                     var saveForHalf = (tpl.save && tpl.savedesc && tpl.savedesc.toLowerCase().indexOf("half") !== -1),
-                        adamantine = (tpl.rname.toLowerCase().indexOf("adamantine") !== -1),
+                        adamantine = (tpl.rname && tpl.rname.toLowerCase().indexOf("adamantine") !== -1),
                         magical = isMagicWeapon(),
-                        silvered = (tpl.rname.toLowerCase().indexOf("silver") !== -1);
+                        silvered = (tpl.rname && tpl.rname.toLowerCase().indexOf("silver") !== -1);
 
                     var createButton = function (str, name, amount) { return str.replace('name', name).replace(/amount/g, amount); };
 
@@ -2090,7 +2151,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                     var heal = "[Heal name amount](!modHealth --sel --heal|amount)";
 
                     var btns = [];
-                    if (tpl.dmg1type) {
+                    if (tpl && tpl.dmg1flag && tpl.dmg1type) {
                         var strDmg1 = tpl.dmg1type.toLowerCase().indexOf("heal") !== -1 ? heal : dmg.replace("type", tpl.dmg1type);
 
                         if (tpl.dmg1flag) { btns.push(createButton(strDmg1, "dmg1", tpl.dmg1.total)); }
@@ -2104,7 +2165,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                         else if (saveForHalf && tpl.crit1)         { btns.push(createButton(strDmg1, "save1crit", Math.floor((tpl.dmg1.total + tpl.crit1.total) * 0.5))); }
                         else if (saveForHalf && tpl.hldmg)         { btns.push(createButton(strDmg1, "save1hl", Math.floor((tpl.dmg1.total + tpl.hldmg.total) * 0.5))); }
                     }
-                    if (tpl.dmg2type) {
+                    if (tpl && tpl.dmg2flag && tpl.dmg2type) {
                         var strDmg2 = tpl.dmg2type.toLowerCase().indexOf("heal") !== -1 ? heal : dmg.replace("type", tpl.dmg2type);
 
                         if (tpl.dmg2flag) { btns.push(createButton(strDmg2, "dmg2", tpl.dmg2.total)); }
@@ -2117,7 +2178,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                     var output = "";
                     _.each(btns, function (btn) { output = output + btn; });
 
-                    if (output != "") { General.whisperGM(scriptName, RollTemplates.formatOutput({ type: RollTemplates.TEMPLATES.DESC.type, desc: output })); }
+                    if (output !== "") { General.whisperGM(scriptName, RollTemplates.formatOutput({ type: RollTemplates.TEMPLATES.DESC.type, desc: output })); }
                 }
             },
 
@@ -2125,13 +2186,13 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                 /**
                  * Handle API commands
                  */
-                if(msg.type == "api") {
-                    _.each(COMMANDS, function(cmd) { if(msg.content.indexOf(cmd.name) !== -1) { cmd.handler(msg); } });
+                if(General.isApiCall(msg)) {
+                    _.each(COMMANDS, function(cmd) { if(cmd.trigger(msg)) { cmd.handler(msg); } });
                 }
                 /**
                  * Roll event listeners
                  */
-                else if (msg.playerid.toLowerCase() != 'api' && msg.rolltemplate) {
+                else if (msg.playerid && msg.playerid.toLowerCase() !== 'api' && msg.rolltemplate) {
                     _.each(EVENT_HANDLERS, function(cmd){ if(cmd.trigger(msg)) { cmd.handler(msg); } });
                 }
             },
@@ -2152,43 +2213,41 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
             },
 
             handleStatus = function(msg) {
+                var output;
                 if(msg.content.indexOf("--help") !== -1) {
-                    var output = COMMANDS.Status.help;
+                    output = COMMANDS.Status.help;
                     _.each(EVENT_HANDLERS, function(event){
                         output = output + "<p><b>--"+event.name+"</b> on|off"+(event.quiet ? "|quiet" : "")+"</p>"
                     });
                     General.sendChat(scriptName, "/w \"" + msg.who.replace(' (GM)','') + "\" " + output);
                     return;
                 }
-                if(!state.FifthEditionOGLbyKyleG) {
-                    state.FifthEditionOGLbyKyleG = {};
-                }
+                General.loadState();
                 _.each(msg.content.split('--'), function(cmd){
                     var ops = cmd.split(' ');
                     var option = ops[0],
                         value = ops[1] ? ops[1] : '',
-                        valid = function(v, q) { return ['on', 'off'].indexOf(v) !== -1 || (q && v == 'quiet'); };
+                        valid = function(v, q) { return ['on', 'off'].indexOf(v) !== -1 || (q && v === 'quiet'); };
                     _.each(EVENT_HANDLERS, function(event){
-                        if(option == event.name  && valid(value, event.quiet)) {
-                            state.FifthEditionOGLbyKyleG[event.name] = value;
+                        if(option === event.name  && valid(value, event.quiet)) {
+                            General.setState(event, value);
                         }
                     });
                 });
-                var getStatus          = function(attr) { return attr ? attr : 'off'; },
-                    formatStatusOutput = function(name, value) {
-                        var styledValue = "<span style='color:black'>"+value+"</span>";
-                        if(value == 'off') { styledValue = styledValue.replace("black","red"); }
-                        else if(value == 'quiet') { styledValue = styledValue.replace("black","blue"); }
-                        return "<span style='display:block;'>"+name+": "+styledValue+"</span>";
-                    },
+                var formatStatusOutput = function(event_handler) {
+                        var styledValue = "<span style='color:black'>"+General.getState(event_handler)+"</span>";
+                        if(General.isStateOff(event_handler)) { styledValue = styledValue.replace("black","red"); }
+                        else if(General.isStateQuiet(event_handler)) { styledValue = styledValue.replace("black","blue"); }
+                        return "<span style='display:block;'>"+event.name+": "+styledValue+"</span>";
+                    };
 
                 output = "<p>Trackers:";
                 _.each(EVENT_HANDLERS, function(event){
-                    output = output + (event.quiet ? formatStatusOutput(event.name, getStatus(state.FifthEditionOGLbyKyleG[event.name])) : "");
+                    output = output + (event.quiet ? formatStatusOutput(event) : "");
                 });
                 output = output + "</p><p>Listeners:";
                 _.each(EVENT_HANDLERS, function(event){
-                    output = output + (!event.quiet ? formatStatusOutput(event.name, getStatus(state.FifthEditionOGLbyKyleG[event.name])) : "");
+                    output = output + (!event.quiet ? formatStatusOutput(event) : "");
                 });
                 output = output + "</p>";
 
@@ -2207,19 +2266,14 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
             checkInstall = function() {
                 log(scriptName + " v" + version + " Ready");
                 updatePotionMacro();
-            },
-
-            loadState = function() {
-                if(!state.FifthEditionOGLbyKyleG) {
-                    state.FifthEditionOGLbyKyleG ={};
-                }
-                _.each(EVENT_HANDLERS, function(event){
-                    state.FifthEditionOGLbyKyleG[event.name] = state.FifthEditionOGLbyKyleG[event.name] || 'on';
-                });
+                General.loadState();
             };
 
         var COMMANDS = {
             LongRest: { name:'longrest', handler: handleLongRest,
+                trigger: function(msg){
+                    return General.isApiCall(msg) && msg.content.indexOf("!"+this.name) !== -1;
+                },
                 help:"<p><b>!longrest</b> Handles a long rest for the specified characters. Does not work for NPCs/mooks. " +
                 "This will reset any resources specified in the long rest resources and short rest resources attributes " +
                 "(<b>" + SpecificAttributes.LONG_REST_RESOURCES + ", " + SpecificAttributes.SHORT_REST_RESOURCES + "</b>) " +
@@ -2232,6 +2286,9 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                 "provided character ids.</p>"
             },
             ShortRest: { name:'shortrest', handler: handleShortRest,
+                trigger: function(msg){
+                    return General.isApiCall(msg) && msg.content.indexOf("!"+this.name) !== -1;
+                },
                 help:"<p><b>!shortrest</b> Handles a short rest for the specified characters. Does not work for NPCs/mooks. " +
                 "This will reset any resources specified in the short rest resources (<b>" + SpecificAttributes.SHORT_REST_RESOURCES +
                 "</b>) and outputs a list of API buttons to the character based on the abilities specified in the short " +
@@ -2243,11 +2300,17 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                 "provided character ids.</p>"
             },
             DivinePortent: { name:'divinePortent', handler: handleDivinePortent,
+                trigger: function(msg){
+                    return General.isApiCall(msg) && msg.content.indexOf("!"+this.name) !== -1;
+                },
                 help:"<p><b>!divinePortent --charid|character_id  --portent|1|2</b> Uses the specified divine portent " +
                 "resource for the character and outputs the roll to the screen. Assumes that character for character_id" +
                 " has resources called 'Divine Portent 1' and 'Divine Portent 2 respectively.'</p>"
             },
             Inspire: { name:'inspire', handler: handleInspire,
+                trigger: function(msg){
+                    return General.isApiCall(msg) && msg.content.indexOf("!"+this.name) !== -1;
+                },
                 help:"<p><b>!inspire</b> Sets the inspiration and inspiration value (<b>" + SpecificAttributes.INSPIRATION +
                 ", " + SpecificAttributes.INSPIRATION_VALUE + "</b>) for the specified target based on the following values.</p>" +
                 "<p><b>--targetid|character_id</b> REQUIRED - the character id for whom the inspiration will be set.</p>" +
@@ -2258,6 +2321,9 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                 "the inspiration value to advantage and the charid is gm.</p>"
             },
             UseInspiration: { name:'useInspiration', handler: handleUseInspiration,
+                trigger: function(msg){
+                    return General.isApiCall(msg) && msg.content.indexOf("!"+this.name) !== -1;
+                },
                 help:"<p><b>!useInspiration</b> Uses the inspiration of the selected characters. Cannot be used on mooks or NPCs.</p>" +
                 "<p>Requires the character's inspiration attribute (<b>" + SpecificAttributes.INSPIRATION + "</b>) to be 'yes' or '1' as well " +
                 "as a value in the inspiration value attribute (<b>" + SpecificAttributes.INSPIRATION_VALUE + "</b>).</p>" +
@@ -2265,34 +2331,57 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                 "die and output the result in a roll template. Will also notify everyone if it was GM inspiration to roll advantage.</p>"
             },
             ToggleRage: { name:'toggleRage', handler: handleToggleRage,
+                trigger: function(msg){
+                    return General.isApiCall(msg) && msg.content.indexOf("!"+this.name) !== -1;
+                },
                 help:"<p><b>!toggleRage character_id</b> Toggles the rage status (<b>" + StatusMarkers.RAGE + "</b>) on " +
                 "the specified target.</p>" +
                 "<p> If no <b>character_id</b> is provided, toggles the status on the selected tokens.</p>"
             },
             ToggleConcentration: { name:'toggleConcentration', handler: handleToggleConcentration,
+                trigger: function(msg){
+                    return General.isApiCall(msg) && msg.content.indexOf("!"+this.name) !== -1;
+                },
                 help:"<p><b>!toggleConcentration</b> Toggles the concentration status (<b>" + StatusMarkers.CONCENTRATION +
                 "</b>) to on or off depending on the current state.</p>"
             },
             ModHealth: { name:'modHealth', handler: handleModHealth,
-                help: "<p><b>!modHeath</b> Allows you to damage, heal, or give temporary hit points to creatures using the following options.</p>"
-                    + "<p><b>--sel</b> will apply to each selected token</p>"
-                    + "<p><b>--charids|id1|id2</b> will apply to each of the given character ids. Should only be used on PCs or NPCs with PC character sheets.</p>"
-                    + "<p><b>--damage|amount|type</b> will apply the given amount of the specified type to the targets. "
-                    + "This will account for any resistance/vulnerabilities/immunities that the PC or NPC has specified. PC modifiers are found using the"
-                    + " respective attribute names (<b>" + SpecificAttributes.INNATE_RESISTANCES + ", " + SpecificAttributes.INNATE_VULNERABILITIES + ", " + SpecificAttributes.INNATE_IMMUNITIES + "</b>)."
-                    + "NPCs modifiers are found using the respective attribute names (<b>" + SpecificAttributes.NPC_RESISTANCES + ", " + SpecificAttributes.NPC_VULNERABILITIES + ", " + SpecificAttributes.NPC_IMMUNITIES + "</b>).</p>"
-                    + "<p><b>--adamantine</b> specifies that the damage type is adamantine with regards to the resistance/vulnerability/immunity of the creature.</p>"
-                    + "<p><b>--magical</b> specifies that the damage type is magical with regards to the resistance/vulnerability/immunity of the creature.</p>"
-                    + "<p><b>--silvered</b> specifies that the damage type is silvered with regards to the resistance/vulnerability/immunity of the creature.</p>"
-                    + "<p><b>--heal|amount</b> will apply the given amount of healing to the targets.</p>"
-                    + "<p><b>--temphp|amount</b> will apply the given amount of temporary hit points to the targets. Should only be used on PCs or NPCs with PC character sheets.</p>"
+                trigger: function(msg){
+                    return General.isApiCall(msg) && msg.content.indexOf("!"+this.name) !== -1;
+                },
+                help: "<p><b>!modHeath</b> Allows you to damage, heal, or give temporary hit points to creatures using " +
+                "the following options.</p>" +
+                "<p><b>--sel</b> will apply to each selected token</p>" +
+                "<p><b>--charids|id1|id2</b> will apply to each of the given character ids. Should only be used on PCs " +
+                "or NPCs with PC character sheets.</p>" +
+                "<p><b>--damage|amount|type</b> will apply the given amount of the specified type to the targets. " +
+                "This will account for any resistance/vulnerabilities/immunities that the PC or NPC has specified. PC " +
+                "modifiers are found using the" + " respective attribute names (<b>" + SpecificAttributes.INNATE_RESISTANCES +
+                ", " + SpecificAttributes.INNATE_VULNERABILITIES + ", " + SpecificAttributes.INNATE_IMMUNITIES + "</b>)." +
+                "NPCs modifiers are found using the respective attribute names (<b>" + SpecificAttributes.NPC_RESISTANCES +
+                ", " + SpecificAttributes.NPC_VULNERABILITIES + ", " + SpecificAttributes.NPC_IMMUNITIES + "</b>).</p>" +
+                "<p><b>--adamantine</b> specifies that the damage type is adamantine with regards to the resistance/" +
+                "vulnerability/immunity of the creature.</p>" +
+                "<p><b>--magical</b> specifies that the damage type is magical with regards to the resistance/" +
+                "vulnerability/immunity of the creature.</p>" +
+                "<p><b>--silvered</b> specifies that the damage type is silvered with regards to the resistance/" +
+                "vulnerability/immunity of the creature.</p>" +
+                "<p><b>--heal|amount</b> will apply the given amount of healing to the targets.</p>" +
+                "<p><b>--temphp|amount</b> will apply the given amount of temporary hit points to the targets. Should " +
+                "only be used on PCs or NPCs with PC character sheets.</p>"
             },
             UpdateDefaultToken: { name:'updateDefaultToken', handler: handleUpdateDefaultToken,
+                trigger: function(msg){
+                    return General.isApiCall(msg) && msg.content.indexOf("!"+this.name) !== -1;
+                },
                 help:"<p><b>!updateDefaultToken</b> updates the selected tokens for the default values of the representative character. " +
                 "This will also update all tokens that represent the character.</p>" +
                 "<p><b>NOTE:</b> If you use this function for mooks, remember that the hit points for the mook will be updated as well.</p>"
             },
             Status: { name:'5estatus', handler: handleStatus,
+                trigger: function(msg){
+                    return General.isApiCall(msg) && msg.content.indexOf("!"+this.name) !== -1;
+                },
                 help:"<p><b>!5estatus</b> Allows you to manage the event listeners for the companion using the following " +
                 "options and then displays the status of the script. If no options are given, outputs the current status.</p>"
             }
@@ -2301,7 +2390,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
         var EVENT_HANDLERS = {
             AmmoTracking:        { name:"ammotracking", handler:handleAmmo,
                 trigger: function(msg){
-                    return state.FifthEditionOGLbyKyleG[this.name].indexOf('off') == -1
+                    return !General.isStateOff(this)
                         && msg.content.indexOf("ammo=") !== -1;
                 },
                 quiet: true
@@ -2309,7 +2398,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
             DeathSaveTracking:   { name:"deathsavetracking", handler:deathSaveEventHandler,
                 trigger: function(msg){
                     var tpls = [RollTemplates.TEMPLATES.SIMPLE.type];
-                    return state.FifthEditionOGLbyKyleG[this.name].indexOf('off') == -1
+                    return !General.isStateOff(this)
                         && tpls.indexOf(msg.rolltemplate) !== -1
                         && msg.content.indexOf('^{death-save-u}') !== -1;
                 },
@@ -2318,7 +2407,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
             HitDiceTracking:     { name:"hitdicetracking", handler:hitDiceEventHandler,
                 trigger: function(msg){
                     var tpls = [RollTemplates.TEMPLATES.SIMPLE.type];
-                    return state.FifthEditionOGLbyKyleG[this.name].indexOf('off') == -1
+                    return !General.isStateOff(this)
                         && tpls.indexOf(msg.rolltemplate) !== -1
                         && msg.content.indexOf('^{hit-dice-u}') !== -1;
                 },
@@ -2327,7 +2416,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
             PotionTracking:      { name:"potiontracking", handler:healingPotionEventHandler,
                 trigger: function(msg){
                     var tpls = [RollTemplates.TEMPLATES.SIMPLE.type];
-                    return state.FifthEditionOGLbyKyleG[this.name].indexOf('off') == -1
+                    return !General.isStateOff(this)
                         && tpls.indexOf(msg.rolltemplate) !== -1
                         && msg.content.indexOf('POTION OF ') !== -1 && msg.content.indexOf('HEALING') !== -1;
                 },
@@ -2340,7 +2429,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                         RollTemplates.TEMPLATES.ATKDMG.type,
                         RollTemplates.TEMPLATES.DMG.type
                     ];
-                    return state.FifthEditionOGLbyKyleG[this.name].indexOf('off') == -1
+                    return !General.isStateOff(this)
                         && tpls.indexOf(msg.rolltemplate) !== -1;
                 },
                 quiet: true
@@ -2353,12 +2442,12 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                         RollTemplates.TEMPLATES.NPCACTION.type,
                         RollTemplates.TEMPLATES.NPCDMG.type
                     ];
-                    return state.FifthEditionOGLbyKyleG[this.name].indexOf('off') == -1
+                    return !General.isStateOff(this)
                         && tpls.indexOf(msg.rolltemplate) !== -1;
                 },
                 quiet: false
             },
-            StatusListener:        { name:"statuslistener", handler: null,
+            StatusListener:      { name:"statuslistener", handler: null,
                 trigger: function(){
                     return false;
                 },
@@ -2368,8 +2457,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
 
         return {
             CheckInstall: checkInstall,
-            RegisterEventHandlers: registerEventHandlers,
-            LoadState: loadState
+            RegisterEventHandlers: registerEventHandlers
         };
     }());
 
@@ -2377,5 +2465,4 @@ on('ready', function(){
     'use strict';
     FifthEditionOGLbyKyleG.CheckInstall();
     FifthEditionOGLbyKyleG.RegisterEventHandlers();
-    FifthEditionOGLbyKyleG.LoadState();
 });
