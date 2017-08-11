@@ -58,13 +58,40 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                 // Rage Specific
                 BEAR_TOTEM             : 'bear_totem',
                 IS_RAGING              : 'is_raging',
+                // Saving Throw Specific
+                PC_STR_SAVE            : 'strength_save_bonus',
+                PC_DEX_SAVE            : 'dexterity_save_bonus',
+                PC_CON_SAVE            : 'constitution_save_bonus',
+                PC_INT_SAVE            : 'intelligence_save_bonus',
+                PC_WIS_SAVE            : 'wisdom_save_bonus',
+                PC_CHA_SAVE            : 'charisma_save_bonus',
                 // Feat Specific
                 WAR_CASTER_FEAT        : 'war_caster_feat',
                 DURABLE_FEAT           : 'durable_feat',
                 //NPC Specific
                 NPC_HP                 : 'npcd_hp',
                 NPC_AC                 : 'npcd_ac',
-                NPC_SPEED              : 'npcd_speed'
+                NPC_SPEED              : 'npcd_speed',
+                NPC_STR_MOD            : 'npcd_str_mod',
+                NPC_STR_SAVE           : 'npcd_str_save',
+                NPC_DEX_MOD            : 'npcd_dex_mod',
+                NPC_DEX_SAVE           : 'npcd_dex_save',
+                NPC_CON_MOD            : 'npcd_con_mod',
+                NPC_CON_SAVE           : 'npcd_con_save',
+                NPC_INT_MOD            : 'npcd_int_mod',
+                NPC_INT_SAVE           : 'npcd_int_save',
+                NPC_WIS_MOD            : 'npcd_wis_mod',
+                NPC_WIS_SAVE           : 'npcd_wis_save',
+                NPC_CHA_MOD            : 'npcd_cha_mod',
+                NPC_CHA_SAVE           : 'npcd_cha_save'
+
+                // Saving throw modifier calculation (accounts for PCs and NPCs alike)
+                //STR_SAVE               : '[[ [[@{selected|'+this.PC_STR_SAVE+'}*({1@{selected|'+this.NPC+'},0}=10)]]+[[@{selected|'+this.NPC_STR_MOD+'}*({1@{selected|'+this.NPC_STR_SAVE+'}0,0}=10)+0@{selected|'+this.NPC_STR_SAVE+'}]]*({1@{selected|'+this.NPC+'},0=11) ]][STR SAVE]',
+                //DEX_SAVE               : '[[ [[@{selected|'+this.PC_DEX_SAVE+'}*({1@{selected|'+this.NPC+'},0}=10)]]+[[@{selected|'+this.NPC_DEX_MOD+'}*({1@{selected|'+this.NPC_DEX_SAVE+'}0,0}=10)+0@{selected|'+this.NPC_DEX_SAVE+'}]]*({1@{selected|'+this.NPC+'},0=11) ]][DEX SAVE]',
+                //CON_SAVE               : '[[ [[@{selected|'+this.PC_CON_SAVE+'}*({1@{selected|'+this.NPC+'},0}=10)]]+[[@{selected|'+this.NPC_CON_MOD+'}*({1@{selected|'+this.NPC_CON_SAVE+'}0,0}=10)+0@{selected|'+this.NPC_CON_SAVE+'}]]*({1@{selected|'+this.NPC+'},0=11) ]][CON SAVE]',
+                //INT_SAVE               : '[[ [[@{selected|'+this.PC_INT_SAVE+'}*({1@{selected|'+this.NPC+'},0}=10)]]+[[@{selected|'+this.NPC_INT_MOD+'}*({1@{selected|'+this.NPC_INT_SAVE+'}0,0}=10)+0@{selected|'+this.NPC_INT_SAVE+'}]]*({1@{selected|'+this.NPC+'},0=11) ]][INT SAVE]',
+                //WIS_SAVE               : '[[ [[@{selected|'+this.PC_WIS_SAVE+'}*({1@{selected|'+this.NPC+'},0}=10)]]+[[@{selected|'+this.NPC_WIS_MOD+'}*({1@{selected|'+this.NPC_WIS_SAVE+'}0,0}=10)+0@{selected|'+this.NPC_WIS_SAVE+'}]]*({1@{selected|'+this.NPC+'},0=11) ]][WIS SAVE]',
+                //CHA_SAVE               : '[[ [[@{selected|'+this.PC_CHA_SAVE+'}*({1@{selected|'+this.NPC+'},0}=10)]]+[[@{selected|'+this.NPC_CHA_MOD+'}*({1@{selected|'+this.NPC_CHA_SAVE+'}0,0}=10)+0@{selected|'+this.NPC_CHA_SAVE+'}]]*({1@{selected|'+this.NPC+'},0=11) ]][CHA SAVE]'
             },
 
             DamageTypes = (function(){
@@ -244,6 +271,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                     var resource = Resource.getForName(resName.trim(), charId);
                     var error = null;
                     if(resource) {
+                        log(resource);
                         if(amount === 'max' && resource.max === '') {
                             error = "Tried to set resource '" + resName + "' to max, but no max is set for the resource";
                         } else if(resource.max === '') {
@@ -253,7 +281,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                             var newAmount = (parseInt(resource.current||0) + parseInt(amount||0) < parseInt(resource.max) ? parseInt(resource.current) + parseInt(amount||0) : parseInt(resource.max));
                             resource.set('current', newAmount);
                         } else {
-                            error = "Something went wrong with reseting resource '" + resName + "' for " + charname;
+                            error = "Something went wrong with resetting resource '" + resName + "' for " + charname;
                         }
                     }
                     if(error) { General.whisperError(scriptName, error); }
@@ -724,7 +752,10 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
 
                 obj.isStateOff = function(event_handler) { return obj.getState(event_handler) === 'off'; };
                 obj.isStateQuiet = function(event_handler) { return obj.getState(event_handler) === 'quiet'; };
-                obj.getState = function(event_handler) { return (event_handler && event_handler.name) ? state.FifthEditionOGLbyKyleG[event_handler.name].toLowerCase() : null; };
+                obj.getState = function(event_handler) {
+                    return (event_handler && event_handler.name && state.FifthEditionOGLbyKyleG[event_handler.name])
+                        ? state.FifthEditionOGLbyKyleG[event_handler.name].toLowerCase() : null;
+                };
                 obj.setState = function(event_handler, value){
                     if(event_handler && event_handler.name) {
                         state.FifthEditionOGLbyKyleG[event_handler.name] = value;
@@ -1226,7 +1257,7 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                                 r1: args[1],
                                 charname: charname
                             });
-                            General.sendChat("GM", "/w " + charname.split(" ")[0] + output);
+                            General.sendChat("GM", "/w " + charname.split(" ")[0] + " " + output);
                             General.whisperGM(scriptName, output);
                         }
                     });
@@ -2212,6 +2243,53 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                 macro.set("action",action);
             },
 
+            savingThrowRequiredListener = function(msg) {
+                if(!EVENT_HANDLERS.SavingThrowListener.trigger(msg)) { return; }
+                var tpl = RollTemplates.parse(msg);
+                var saveAttr = null,
+                    saveDc = null;
+                if(tpl && tpl.save && tpl.save === 1) {
+                    saveAttr = tpl.saveattr;
+                    saveDc = tpl.savedc;
+                } else if(tpl && tpl.desc && tpl.desc.toLowerCase().indexOf('saving throw') !== -1) {
+
+                } else if(tpl && tpl.description && tpl.description.toLowerCase().indexOf('saving throw') !== -1) {
+
+                }
+
+                if(saveAttr && saveDc) {
+                    var output = "[" + saveAttr.slice(0,3) + " save DC " + saveDc +"](!savingThrow " + saveAttr + " " + saveDc + ")";
+                    General.whisperGM(scriptName, RollTemplates.formatOutput({
+                        type: RollTemplates.TEMPLATES.DESC.type,
+                        desc: output
+                    }));
+                }
+            },
+
+            handleSavingThrow = function(msg) {
+                if(msg.content.indexOf("--help") !== -1 || msg.content.split(' ').size !== 3) {
+                    General.sendChat(scriptName, "/w \"" + msg.who.replace(' (GM)','') + "\" " + COMMANDS.SavingThrow.help);
+                    return;
+                } else if (!msg.selected) {
+                    General.sendChat(scriptName, "/w \"" + msg.who.replace(' (GM)','') + "\" selected token expected.");
+                }
+                var stat = msg.content.split(' ')[1];
+                var saveDc = msg.content.split(' ')[2];
+                _.each(msg.selected, function(sel){
+                    var mod = null;
+                    var charId = General.getCharacterForToken(sel._id).id;
+                    switch(stat.toLowerCase()) {
+                        case 'strength':     case 'str': mod = SpecificAttributes.STR_SAVE; break;
+                        case 'dexterity':    case 'dex': mod = SpecificAttributes.DEX_SAVE; break;
+                        case 'constitution': case 'con': mod = SpecificAttributes.CON_SAVE; break;
+                        case 'intelligence': case 'int': mod = SpecificAttributes.INT_SAVE; break;
+                        case 'wisdom':       case 'wis': mod = SpecificAttributes.WIS_SAVE; break;
+                        case 'charisma':     case 'cha': mod = SpecificAttributes.CHA_SAVE; break;
+                    }
+                });
+
+            },
+
             handleStatus = function(msg) {
                 var output;
                 if(msg.content.indexOf("--help") !== -1) {
@@ -2257,6 +2335,10 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                 }));
             },
 
+            handleRollTemplate = function(msg) {
+
+            },
+
             registerEventHandlers = function() {
                 on("change:token:"+TokenSpecifics.HP_BAR+"_value", updateHealthStatus);
                 on("change:attribute:current", clearDeathSavingThrows);
@@ -2264,9 +2346,9 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
             },
 
             checkInstall = function() {
-                log(scriptName + " v" + version + " Ready");
                 updatePotionMacro();
                 General.loadState();
+                log(scriptName + " v" + version + " Ready");
             };
 
         var COMMANDS = {
@@ -2378,6 +2460,14 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                 "This will also update all tokens that represent the character.</p>" +
                 "<p><b>NOTE:</b> If you use this function for mooks, remember that the hit points for the mook will be updated as well.</p>"
             },
+            SavingThrow: { name:'savingThrow', handler: handleSavingThrow,
+                 trigger: function(msg){
+                    return General.isApiCall(msg) && msg.content.indexOf("!"+this.name) !== -1;
+                 },
+                help:"<p><b>!savingThrow attribute</b> Allows you to make a saving for the selected tokens regardless " +
+                "of whether or not the token is a PC or NPC/mook. The attribute given can be the full name, or the shortened " +
+                "version, case insensitive. E.g. Constitution or Con or CON</p>"
+            },
             Status: { name:'5estatus', handler: handleStatus,
                 trigger: function(msg){
                     return General.isApiCall(msg) && msg.content.indexOf("!"+this.name) !== -1;
@@ -2441,6 +2531,19 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                         RollTemplates.TEMPLATES.DMG.type,
                         RollTemplates.TEMPLATES.NPCACTION.type,
                         RollTemplates.TEMPLATES.NPCDMG.type
+                    ];
+                    return !General.isStateOff(this)
+                        && tpls.indexOf(msg.rolltemplate) !== -1;
+                },
+                quiet: false
+            },
+            SavingThrowListener: { name:"savingthrowlistener", handler:savingThrowRequiredListener,
+                trigger: function(msg){
+                    var tpls = [
+                        RollTemplates.TEMPLATES.ATKDMG.type,
+                        RollTemplates.TEMPLATES.DMG.type,
+                        RollTemplates.TEMPLATES.NPCACTION.type,
+                        RollTemplates.TEMPLATES.SPELL.type
                     ];
                     return !General.isStateOff(this)
                         && tpls.indexOf(msg.rolltemplate) !== -1;
