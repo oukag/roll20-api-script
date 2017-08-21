@@ -432,6 +432,11 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                     return obj;
                 };
 
+                obj.getForPartyTracker = function(item) {
+                    log(item);
+                    // The item from Party Tracker will have the
+                };
+
                 return obj;
             }()),
 
@@ -760,6 +765,43 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
                     if(event_handler && event_handler.name) {
                         state.FifthEditionOGLbyKyleG[event_handler.name] = value;
                     }
+                };
+
+                // This function courtesy of The Aaron to generate a universally unique ID that can be used to generate a row ID for
+                // a repeating section of a character sheet.
+                obj.generateUUID = (function() {
+                    "use strict";
+
+                    var a = 0, b = [];
+                    return function() {
+                        var c = (new Date()).getTime() + 0, d = c === a;
+                        a = c;
+                        for (var e = new Array(8), f = 7; 0 <= f; f--) {
+                            e[f] = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".charAt(c % 64);
+                            c = Math.floor(c / 64);
+                        }
+                        c = e.join("");
+                        if (d) {
+                            for (f = 11; 0 <= f && 63 === b[f]; f--) {
+                                b[f] = 0;
+                            }
+                            b[f]++;
+                        } else {
+                            for (f = 0; 12 > f; f++) {
+                                b[f] = Math.floor(64 * Math.random());
+                            }
+                        }
+                        for (f = 0; 12 > f; f++){
+                            c += "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".charAt(b[f]);
+                        }
+                        return c;
+                    };
+                }());
+
+                // This is another function courtesy of The Aaron to generate a Row ID of a repeating section
+                obj.generateRowID = function () {
+                    "use strict";
+                    return generateUUID().replace(/_/g, "Z");
                 };
 
                 return obj;
@@ -2560,7 +2602,8 @@ var FifthEditionOGLbyKyleG = FifthEditionOGLbyKyleG || (function(){
 
         return {
             CheckInstall: checkInstall,
-            RegisterEventHandlers: registerEventHandlers
+            RegisterEventHandlers: registerEventHandlers,
+            ParseItemFromHandout: Item.parseFromHandout
         };
     }());
 
