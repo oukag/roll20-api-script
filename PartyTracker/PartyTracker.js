@@ -186,11 +186,15 @@ var PartyTracker = PartyTracker || (function(){
 
 	distributeCoins = function(characters, coins, spend) {
         _.each(characters, function(character){
-            var output = "&{template:default} {{name=" + character.get("name") + " found}}";
+            var output = "&{template:default} {{name=" + character.get("name") + (spend ? " spent" : " found") + "}}";
+            // Used to determine if we should even bother outputing to the player. We don't want to output if there
+			// weren't any coins given.
+            var displayOutput = false;
             _.each(coins, function(value, key){
                 // We only want to bother adding the amount if the amount is greater than 0.
                 var coin = (value > 0 ? getCoinForName(key) : null);
                 if(coin) {
+                	displayOutput = true;
                     if(!spend) {
                         increaseAttrByAmount(character.id, coin.attr, value);
                     } else {
@@ -199,8 +203,10 @@ var PartyTracker = PartyTracker || (function(){
                     output = output + '{{' + coin.fName + '=' + value + '}} ';
                 }
             });
-            GeneralScripts.SendChat("GM", "/w " + character.get("name").split(" ")[0] + " " + output);
-            GeneralScripts.WhisperGM(scriptName, output);
+            if(displayOutput) {
+                GeneralScripts.SendChat("GM", "/w " + character.get("name").split(" ")[0] + " " + output);
+                GeneralScripts.WhisperGM(scriptName, output);
+            }
         });
 	},
 
@@ -255,51 +261,25 @@ var PartyTracker = PartyTracker || (function(){
 	PartyParcel = (function(){
 		'use strict';
 		var obj = {};
-		var pcTableRegex = new RegExp("<table><thead><tr><td(?:.*?)>Characters</td></tr></thead><tbody>(.*?)</tbody></table>"),
-            coinTableRegex = new RegExp("<table><thead><tr><td>Amount</td><td>Type</td></tr></thead><tbody>(.*?)</tbody></table>");
 
-        // This function courtesy of The Aaron to generate a universally unique ID that can be used to generate a row ID for
-        // a repeating section of a character sheet.
-		var generateUUID = (function() {
-                "use strict";
+		var REGEX = {
+			PC_TABLE: new RegExp("<table><thead><tr><td(?:.*?)>Characters</td></tr></thead><tbody>(.*?)</tbody></table>"),
+			PC_ROW: new RegExp("<tr><td>(.+?)<\/td><\/tr>", 'g'),
 
-                var a = 0, b = [];
-                return function() {
-                    var c = (new Date()).getTime() + 0, d = c === a;
-                    a = c;
-                    for (var e = new Array(8), f = 7; 0 <= f; f--) {
-                        e[f] = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".charAt(c % 64);
-                        c = Math.floor(c / 64);
-                    }
-                    c = e.join("");
-                    if (d) {
-                        for (f = 11; 0 <= f && 63 === b[f]; f--) {
-                            b[f] = 0;
-                        }
-                        b[f]++;
-                    } else {
-                        for (f = 0; 12 > f; f++) {
-                            b[f] = Math.floor(64 * Math.random());
-                        }
-                    }
-                    for (f = 0; 12 > f; f++){
-                        c += "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".charAt(b[f]);
-                    }
-                    return c;
-                };
-            }()),
+			COIN_TABLE: new RegExp("<table><thead><tr><td>Amount</td><td>Type</td></tr></thead><tbody>(.*?)</tbody></table>"),
+			COIN_ROW: function(coin_name) {
+				return new RegExp("<tr><td>(.*?)<\/td><td>" + coin_name + "<\/td><\/tr>");
+				},
 
-            // This is another function courtesy of The Aaron to generate a Row ID of a repeating section
-            generateRowID = function () {
-                "use strict";
-                return generateUUID().replace(/_/g, "Z");
-            },
+			ITEM_TABLE: new RegExp("<table><thead><tr><td>Item</td><td>Amount</td><td>Character</td></tr></thead><tbody>(.*?)</tbody></table>"),
+			ITEM_ROW: new RegExp('<tr><td><a.+handout\/(.+?)\\">(.+?)<\/a><\/td><td><strong>(.+?)<\/strong><\/td><td>(.+?)<\/td><\/tr>', 'g')
+		};
 
 			/*
 			 Adds a new variable to a coins object containing the coins that are not evenly distributed to the given characters.
 			 Also updates the coins to be the amount of coins that each person would receive
 			 */
-            updateExcessCoins = function(coins, numCharacters) {
+        var updateExcessCoins = function(coins, numCharacters) {
                 coins.excess = {};
                 if(numCharacters > 1) {
                     _.each(COINS, function(c){
@@ -311,11 +291,76 @@ var PartyTracker = PartyTracker || (function(){
                 }
             },
 
+			getDistributedItems = function(items) {
+            	// Distribute will contain the character ID's and an array of items per character that will be given.
+            	items.distribute = {};
+            	_.each(items, function(item, id){
+            		if(id != 'distribute') {
+                        // If we are missing information in the row information, or were given incorrect information,
+                        // we will just set the row as an excess item row rather than determining what the actual
+                        // problem was. The user can look to the log to figure out why it failed.
+            			if(item.name && item.amount && parseInt(item.amount) > 0 && item.characterStr) {
+							var amountDistributed = 0;
+                            // Get the character(s) who will get the item.
+							_.each(item.characterStr.split(','), function(str) {
+                                var split = str.split('|');
+								var aDis = split.length > 1 ? parseInt(split[1]) : 1;
+
+                                var character = findObjs({ _type: 'character', name: split[0] })[0];
+                                if(character) {
+                                	// update the amount to distribute
+                                    amountDistributed = amountDistributed + aDis;
+                                	if(!items.distribute[character.id]) {
+                                		items.distribute[character.id] = [];
+									}
+									// Get the item
+                                    items.distribute[character.id].push({
+                                        handoutid: id,
+                                        amount: aDis,
+                                        name: item.name,
+										originalrow: item.originalrow,
+                                        notes: item.notes
+                                    });
+                                } else {
+                                    sendChat(scriptName, '/w gm No character found with name \'' + split[0] +'\'', null, {noarchive:true});
+								}
+							});
+							if(amountDistributed > item.amount) {
+                                sendChat(scriptName, '/w gm Cannot distribute more ' + item.name + 'than there are in the parcel', null, {noarchive:true});
+							} else if(amountDistributed < item.amount) {
+								// There are remaining items that would need to be distributed at another time
+								item.amount = item.amount - amountDistributed;
+							} else {
+								// There will be no excess item of this type, so we will reset the row information.
+								item = null;
+							}
+
+						} else {
+                            var problemStr = 'problem with item: id:' + id;
+                            if(!item.name) { problemStr = problemStr + "\tNo name attribute found\n"; }
+							if(!item.amount) { problemStr = problemStr + "\tNo amount attribute found\n"; }
+							if(item.amount && parseInt(item.amount) <= 0) { problemStr = problemStr + "\tIncorrect amount found\n"; }
+							if(!item.characterStr) { problemStr = problemStr + "\tNo characters were given"; }
+							log(problemStr);
+                        }
+						// Update the item in the list.
+                        items[id] = item;
+					}
+				});
+            	return items;
+			},
+
+			distributeItems = function(items) {
+            	items = getDistributedItems(items);
+            	log('distribute items');
+            	log(items);
+
+			},
+
             parsePCsFromParcel = function(notes) {
                 var characters = [];
-                var rowRegex = new RegExp("<tr><td>(.+?)<\/td><\/tr>", 'g');
                 var rowMatch;
-                while((rowMatch = rowRegex.exec(notes))) {
+                while((rowMatch = REGEX.PC_ROW.exec(notes))) {
                     var cName = rowMatch[1];
                     log(cName);
                     var character = findObjs({ _type: 'character', name: cName })[0];
@@ -332,8 +377,7 @@ var PartyTracker = PartyTracker || (function(){
             parseCoinsFromParcel = function(notes) {
                 var coins = {};
                 _.each(COINS, function(c){
-                    var regex = new RegExp("<tr><td>(.*?)<\/td><td>" + c.name + "<\/td><\/tr>");
-                    var match = regex.exec(notes)[1];
+                    var match = REGEX.COIN_ROW(c.name).exec(notes)[1];
                     var value = (match) ? match.split('<td>')[match.split('<td>').length - 1] : '0';
                     //log(match + ' -> ' + value);
                     coins[c.name] = parseInt(value);
@@ -341,10 +385,60 @@ var PartyTracker = PartyTracker || (function(){
                 return coins;
             },
 
+			parseItemsFromParcelAsync = function(notes) {
+            	var items = {};
+            	var rowMatch;
+            	// We want to go through each of the rows in the item table and get the individual information filtered
+				// from the HTML code.
+            	while(rowMatch = REGEX.ITEM_ROW.exec(notes)) {
+            		// expected rowMatch should be as follows.
+					// index 0 would be the entire row string including the html
+					var handoutid = rowMatch[1];
+            		items[handoutid] = {
+                        name: rowMatch[2],
+                        amount: rowMatch[3],
+                        characterStr: rowMatch[4],
+                        originalrow: rowMatch[0] // We keep this to update the table after distributing the items
+                    };
+				}
+				log(items);
+
+            	// This next variable method is a way to get around the asynchronous calls we are about to make.
+				// By utilizing _.after we wait until this method is call the number of times equal to the items rows
+				// we just parsed before actually entering into the method and performing the next calculations.
+				//
+				// In essence this is how you can turn a number of asynchronous calls into a sequential method.
+            	var finallyUseItems = _.after(_.size(items), function(){
+            		distributeItems(items);
+                });
+
+            	// Before we finally use the items that we have parsed, we want to get the notes from the handouts
+				// attached in the item. These handout notes will contain the attribute information for the item if we
+				// need to create a new repeating inventory item for the character(s).
+            	_.each(items, function(r,id){
+            		var handout = getObj('handout', id);
+            		//log(handout);
+                    handout.get('notes', function (notes) {
+                        items[id].notes = notes;
+                        // Each time we call this we are getting closer to actually entering into the method.
+                        finallyUseItems();
+                    });
+				});
+			},
+
             createNewParcel = function() {
-                var notes = createParcelTableForCoins(null);
-                return createObj('handout', {name: parcelHandoutName, notes: notes});
+                var notes = createParcelTableForCharacters() + '<br>' + createParcelTableForCoins(null) + '<br>' + createParcelTableForItems();
+                var handout = createObj('handout', {name: parcelHandoutName});
+                // We have to set the notes using this method rather than in the createObj method because there is a
+				// chance that the notes will not be set using the createObj method due to the nature of the notes/gmnotes attributes.
+				// This is similar to the reason that we set a delay when setting these attributes.
+                handout.set('notes', notes);
+                return handout;
             },
+
+			createParcelTableForCharacters = function() {
+            	return '<table><thead><tr><td style="text-align: center">Characters</td></tr></thead><tbody><tr><td></td></tr><tr><td></td></tr><tr><td></td></tr><tr><td></td></tr></tbody></table>';
+			},
 
             createParcelTableForCoins = function(coins) {
                 if(!coins) {
@@ -356,10 +450,14 @@ var PartyTracker = PartyTracker || (function(){
                 _.each(COINS, function(c){
                     table = table + '<tr><td>'+ coins[c.name] +'</td><td>'+ c.name +'</td></tr>';
                 });
-                table = table +'</tbody></table><br>';
+                table = table +'</tbody></table>';
 
                 return table;
-            };
+            },
+
+			createParcelTableForItems = function() {
+            	return '';
+			};
 
         obj.findOrCreateParcel = function() {
             var existing = findObjs({
@@ -376,11 +474,11 @@ var PartyTracker = PartyTracker || (function(){
                 parcel.get('notes', function(notes){
                     log(notes);
                     log('get pcs');
-                    var pcTableStr = pcTableRegex.exec(notes) ? pcTableRegex.exec(notes)[0] : null;
+                    var pcTableStr = REGEX.PC_TABLE.exec(notes) ? REGEX.PC_TABLE.exec(notes)[0] : null;
                     if(!pcTableStr) { log('No table with header - Characters found in the parcel.'); return; }
                     var characters = parsePCsFromParcel(pcTableStr);
                     log('get coins');
-                    var coinTableStr = coinTableRegex.exec(notes) ? coinTableRegex.exec(notes)[0] : null;
+                    var coinTableStr = REGEX.COIN_TABLE.exec(notes) ? REGEX.COIN_TABLE.exec(notes)[0] : null;
                     log(coinTableStr);
                     if(!coinTableStr) { log('No table for coins found.'); return; }
                     var coins = parseCoinsFromParcel(coinTableStr);
@@ -390,13 +488,17 @@ var PartyTracker = PartyTracker || (function(){
                     distributeCoins(characters, coins, false);
                     var newCoinTableStr = createParcelTableForCoins(coins.excess);
                     notes = notes.replace(coinTableStr, newCoinTableStr);
-                    log(notes);
-
-                    // defer setting until 100 milliseconds later.  This might help get
-                    // out of whatever race condition you are in...
+					// Update the notes of the handout again
+                    // defer setting until 100 milliseconds later.  This is to help get out the race condition between
+					// the callback function and setting the notes attribute.
                     setTimeout(function(){
                         parcel.set('notes', notes);
                     },100);
+
+                    var itemTableStr = REGEX.ITEM_TABLE.exec(notes) ? REGEX.ITEM_TABLE.exec(notes)[0] : null;
+                    // At this point we will be dealing with multiple asyncronous functions. If we want to perform any
+					// other updates on the parcel notes, it will have to be passed into this method and done there.
+                    parseItemsFromParcelAsync(itemTableStr);
                 });
             }
         };
